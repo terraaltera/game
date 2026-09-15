@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Terra Altera — A Song of the Forgotten Kingdoms</title>
+<meta name="description" content="Terra Altera — gra planszowa cywilizacyjna dla 2–4 graczy. Poznaj mechaniki, plansze, karty i zasady rozgrywki.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============================= NAGŁÓWEK ============================= -->
+<header class="site-header" id="top">
+  <div class="header-bar">
+    <a href="#top" class="brand">
+      <span class="brand-mark">TA</span>
+      <span class="brand-text">TERRA ALTERA</span>
+    </a>
+
+    <nav class="main-nav" id="mainNav">
+      <ul>
+        <li><a href="#opis" class="nav-link">Opis</a></li>
+        <li><a href="#mechanizmy" class="nav-link">Mechanizmy</a></li>
+        <li><a href="#plansze" class="nav-link">Plansze</a></li>
+        <li><a href="#karty" class="nav-link">Karty</a></li>
+        <li><a href="#rundy" class="nav-link">Rundy</a></li>
+        <li><a href="#akcje-zasoby" class="nav-link">Akcje i zasoby</a></li>
+        <li><a href="#kontakt" class="nav-link">Kontakt</a></li>
+      </ul>
+    </nav>
+
+    <div class="header-actions">
+      <a href="indexang.html" class="lang-switch" aria-label="Switch to English version">
+        <svg viewBox="0 0 60 36" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect width="60" height="36" fill="#00247d"/>
+          <path d="M0,0 60,36 M60,0 0,36" stroke="#fff" stroke-width="7"/>
+          <path d="M0,0 60,36 M60,0 0,36" stroke="#cf142b" stroke-width="3"/>
+          <path d="M30,0 30,36 M0,18 60,18" stroke="#fff" stroke-width="11"/>
+          <path d="M30,0 30,36 M0,18 60,18" stroke="#cf142b" stroke-width="6"/>
+        </svg>
+        <span class="lang-label">EN</span>
+      </a>
+      <button class="nav-toggle" id="navToggle" aria-label="Otwórz menu" aria-expanded="false" aria-controls="mainNav">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ============================= 1. OPIS ============================= -->
+  <section id="opis">
+    <div class="hero-title-block container">
+      <h1 class="game-title">TERRA ALTERA</h1>
+      <p class="game-subtitle">A Song of the Forgotten Kingdoms</p>
+      <div class="ornament-divider" aria-hidden="true"></div>
+    </div>
+
+    <div class="section-inner">
+      <div class="container opis-flow">
+        <span class="section-eyebrow">Opis</span>
+
+        <div class="opis-media-float">
+          <div class="media-frame">
+            <img src="images/banner.png" alt="Terra Altera — ilustracja tytułowa" decoding="async">
+          </div>
+        </div>
+
+        <p class="lead">W alternatywnym świecie, gdzie historia potoczyła się innym torem, nowe królestwa walczą o prymat nad losem ludzkości. Starzejący się Imperator poszukuje następcy. Jeśli chcesz nim zostać, musisz doprowadzić swoją cywilizację do rozkwitu i kulturowej dominacji, mądrze wykorzystując ambasadorów oraz potencjał swojego dominium.</p>
+        <p>W Terra Altera prowadzisz swój lud, rozwijając technologie, odkrywając nowe terytoria, zarządzając zasobami i populacją, wznosząc cuda oraz korzystając ze specjalnych zdolności lidera. Nie jesteś jednak sam — rywalizujące cywilizacje będą wykorzystywać własne atuty i uderzać w twoje słabe punkty.</p>
+        <p>Terra Altera łączy klasyczne i nowatorskie elementy gry cywilizacyjnej: populację i zasoby, technologie i cuda, liderów i dyplomację, agresje i wojny, karawany i barbarzyńców, wydarzenia, a także forty oraz tor strategii. Wszystko to tworzy rozbudowane uniwersum i daje wiele dróg rozwoju.</p>
+        <p>Gra toczy się na planszy głównej, zwanej Imperialnym Dworem, oraz na indywidualnych planszach graczy i jest przeznaczona dla 2–4 osób. Niezależnie od obranej drogi twój cel pozostaje ten sam: kulturowa dominacja nad pozostałymi królestwami. Masz szansę zostać nowym Imperatorem. Pamiętaj — przyszłość Terra Altera jest w twoich rękach.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================= 2. MECHANIZMY ============================= -->
+  <section id="mechanizmy" class="alt-bg">
+    <div class="section-inner">
+      <div class="container split">
+        <div class="split-text">
+          <span class="section-eyebrow">Mechanizmy</span>
+          <p class="lead">Główna mechanika gry polega na wysyłaniu pionków akcji na planszę główną i zagrywaniu kart imperialnych. To uruchamia akcje, które powodują rozwój cywilizacji widoczny na planszy gracza i na planszy głównej.</p>
+          <p>Akcje uruchamia się wysyłając pionki na planszę główną. Są 3 rodzaje pionków akcji oraz robotnicy:</p>
+          <ul class="pionki-list">
+            <li><strong>Ambasador</strong> — pionek akcji wielokrotnego użytku</li>
+            <li><strong>Plemię</strong> — pionek akcji jednorazowego użytku</li>
+            <li><strong>Piramida</strong> — pionek akcji jednorazowego użytku</li>
+            <li><strong>Robotnik (wojownik)</strong> — pionek pracujący na technologiach i terytoriach</li>
+          </ul>
+          <p>Pionki stawiamy na przemian na odpowiednich polach akcji na planszy głównej. Robotnik jest wysyłany na technologie i terytoria do produkcji zasobów i siły.</p>
+        </div>
+
+        <div class="split-media">
+          <div class="media-frame">
+            <img src="images/mech1.png" alt="Typy robotników w Terra Altera: Ambasador, Plemię, Piramidy oraz Robotnik, wraz z zakresami ich działania" decoding="async">
+            <div class="media-caption">Przykładowe typy robotników i ich zakresy działania</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================= 3. PLANSZE ============================= -->
+  <section id="plansze">
+    <div class="section-inner">
+      <div class="container">
+        <span class="section-eyebrow">Plansze</span>
+        <p class="section-lede wide">Rozgrywka toczy się jednocześnie na dwóch poziomach — na wspólnej planszy głównej, zwanej Imperialnym Dworem, gdzie rywalizujecie o dostęp do akcji, oraz na indywidualnych planszach graczy, na których rozwijacie własne cywilizacje.</p>
+
+        <div class="boards-grid">
+          <a class="board-tile" href="images/plansza.png" target="_blank" rel="noopener">
+            <div class="media-frame">
+              <img src="images/plansza.png" alt="Plansza główna Terra Altera — Imperialny Dwór" decoding="async">
+              <div class="media-caption">Plansza główna — Imperialny Dwór</div>
+            </div>
+            <span class="zoom-hint">Kliknij, aby powiększyć</span>
+          </a>
+
+          <a class="board-tile" href="images/gracza.png" target="_blank" rel="noopener">
+            <div class="media-frame">
+              <img src="images/gracza.png" alt="Plansza gracza w Terra Altera" decoding="async">
+              <div class="media-caption">Plansza gracza</div>
+            </div>
+            <span class="zoom-hint">Kliknij, aby powiększyć</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================= 4. KARTY ============================= -->
+  <section id="karty" class="alt-bg">
+    <div class="section-inner">
+      <div class="container">
+        <span class="section-eyebrow">Karty</span>
+        <p class="section-lede wide">Każda partia Terra Altera jest inna dzięki bogactwu kart: technologii i cudów budujących potęgę twojej cywilizacji, kart imperialnych umożliwiających rozwój dyplomacji lub wykonanie dodatkowych akcji, a także kart liderów, kolonii i barbarzyńców, którzy zmieniają bieg rozgrywki.</p>
+
+        <div class="cards-group">
+          <h3 class="cards-group-title">Technologie i Cuda</h3>
+          <div class="card-row">
+            <div class="card-tile"><img src="images/tech1.png" alt="Karta technologii I" decoding="async"><span class="card-tag">Technologia</span></div>
+            <div class="card-tile"><img src="images/cud1.png" alt="Karta cudu I" decoding="async"><span class="card-tag">Cud</span></div>
+            <div class="card-tile"><img src="images/tech2.png" alt="Karta technologii II" decoding="async"><span class="card-tag">Technologia</span></div>
+            <div class="card-tile"><img src="images/cud2.png" alt="Karta cudu II" decoding="async"><span class="card-tag">Cud</span></div>
+            <div class="card-tile"><img src="images/tech3.png" alt="Karta technologii III" decoding="async"><span class="card-tag">Technologia</span></div>
+          </div>
+        </div>
+
+        <div class="cards-group">
+          <h3 class="cards-group-title">Karty imperialne</h3>
+          <div class="card-row">
+            <div class="card-tile"><img src="images/imperialna1.png" alt="Karta imperialna I" decoding="async"><span class="card-tag">Karta imperialna</span></div>
+            <div class="card-tile"><img src="images/imperialna2.png" alt="Karta imperialna II" decoding="async"><span class="card-tag">Karta imperialna</span></div>
+            <div class="card-tile"><img src="images/imperialna3.png" alt="Karta imperialna III" decoding="async"><span class="card-tag">Karta imperialna</span></div>
+            <div class="card-tile"><img src="images/imperialna4.png" alt="Karta imperialna IV" decoding="async"><span class="card-tag">Karta imperialna</span></div>
+            <div class="card-tile"><img src="images/imperialna5.png" alt="Karta imperialna V" decoding="async"><span class="card-tag">Karta imperialna</span></div>
+          </div>
+        </div>
+
+        <div class="cards-group">
+          <h3 class="cards-group-title">Liderzy, Kolonie i Barbarzyńcy</h3>
+          <div class="card-row">
+            <div class="card-tile"><img src="images/lid1.png" alt="Karta lidera I" decoding="async"><span class="card-tag">Lider</span></div>
+            <div class="card-tile"><img src="images/kol1.png" alt="Karta kolonii I" decoding="async"><span class="card-tag">Kolonia</span></div>
+            <div class="card-tile"><img src="images/bar.png" alt="Karta barbarzyńców" decoding="async"><span class="card-tag">Barbarzyńcy</span></div>
+            <div class="card-tile"><img src="images/kol2.png" alt="Karta kolonii II" decoding="async"><span class="card-tag">Kolonia</span></div>
+            <div class="card-tile"><img src="images/lid2.png" alt="Karta lidera II" decoding="async"><span class="card-tag">Lider</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================= 5. RUNDY ============================= -->
+  <section id="rundy">
+    <div class="section-inner">
+      <div class="container split reverse">
+        <div class="split-text">
+          <span class="section-eyebrow">Rundy</span>
+          <p>Każda runda Terra Altera prowadzi graczy przez ten sam, czytelny rytm faz, dzięki czemu rozgrywka pozostaje dynamiczna, a jednocześnie łatwa do opanowania już od pierwszej partii.</p>
+          <ol class="rounds-steps">
+            <li class="step-prep"><span class="step-num">P</span><span><strong>Przygotowanie rundy</strong></span></li>
+            <li><span class="step-num">1</span><span><strong>Karta wydarzenia</strong></span></li>
+            <li><span class="step-num">2</span><span><strong>Dyplomacja</strong> (opcjonalnie), zagranie karty imperialnej</span></li>
+            <li><span class="step-num">3</span><span><strong>Akcje</strong> — worker placement + karty imperialne</span></li>
+            <li><span class="step-num">4</span><span><strong>Produkcja</strong></span></li>
+            <li><span class="step-num">5</span><span><strong>Rozpatrzenie wydarzeń</strong></span></li>
+            <li><span class="step-num">6</span><span><strong>Kolonizacja</strong></span></li>
+            <li><span class="step-num">7</span><span><strong>Status wojny</strong></span></li>
+            <li><span class="step-num">8</span><span><strong>Karty manuskryptów</strong> — tylko w 4. i 6. erze</span></li>
+          </ol>
+        </div>
+
+        <div class="split-media">
+          <div class="event-fan">
+            <div class="card-tile"><img src="images/wy1.png" alt="Karta wydarzenia I" decoding="async"><span class="card-tag">Wydarzenie</span></div>
+            <div class="card-tile"><img src="images/wy2.png" alt="Karta wydarzenia II" decoding="async"><span class="card-tag">Wydarzenie</span></div>
+            <div class="card-tile"><img src="images/wy3.png" alt="Karta wydarzenia III" decoding="async"><span class="card-tag">Wydarzenie</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================= 6. AKCJE I ZASOBY ============================= -->
+  <section id="akcje-zasoby" class="alt-bg">
+    <div class="section-inner">
+      <div class="container">
+        <span class="section-eyebrow">Akcje i zasoby</span>
+
+        <div class="actions-resources-intro">
+          <div class="ar-col">
+            <h3>Akcje</h3>
+            <p>W trakcie swojej tury wybierasz jedną z głównych akcji np.: kupno technologii, zwiększenie populacji, odkrycie terytorium lub wysłanie robotnika na technologie lub terytoria w celu produkcji zasobów lub zwiększenia siły.</p>
+          </div>
+          <div class="ar-col">
+            <h3>Zasoby</h3>
+            <p>Twoja cywilizacja opiera się na zasobach umożliwiających rozwój: energia, kamień, złoto, wpływy, energia, kultura oraz siła i męstwo. Zasobem w grze są także karty imperialne. Każdy z zasobów jest potrzebny do rozwoju innej gałęzi twojej cywilizacji, np. złoto umożliwia odkrywanie terenów i zakup kart technologii i cudów, a energia umożliwia wzrost populacji.</p>
+          </div>
+        </div>
+
+        <div class="infographic-frame">
+          <img src="images/akcje.png" alt="Ściągawka głównych akcji i zasobów w Terra Altera" decoding="async">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================= 7. KONTAKT ============================= -->
+  <section id="kontakt">
+    <div class="section-inner">
+      <div class="container contact-wrap">
+        <div>
+          <span class="section-eyebrow">Kontakt</span>
+
+          <div class="contact-block">
+            <h3>Projekt gry</h3>
+            <p>Adam Stecyk</p>
+          </div>
+
+          <div class="contact-block">
+            <h3>Testerzy</h3>
+            <ul class="testers-list">
+              <li>Anna Stecyk</li>
+              <li>Gabriela Poszumska</li>
+              <li>Maciej Czaplewski</li>
+              <li>Filip Stelter</li>
+              <li>Tomasz Wawrzyniak</li>
+              <li>Rafael Benoit</li>
+              <li>Michał Chełminiak</li>
+              <li class="testers-more">+ 14 pozostałych testerów</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="contact-card">
+          <div class="crest">TA</div>
+          <h3>Napisz do nas</h3>
+          <p>Masz pytania o grę, chcesz zostać testerem lub porozmawiać o współpracy? Napisz na poniższy adres.</p>
+          <p class="contact-email">adam.stecyk@usz.edu.pl</p>
+
+          <div class="contact-icons">
+            <img src="images/icon-anchor.png" alt="" decoding="async">
+            <img src="images/icon-pyramid.png" alt="" decoding="async">
+            <img src="images/icon-star.png" alt="" decoding="async">
+            <img src="images/icon-swords.png" alt="" decoding="async">
+            <img src="images/icon-thumbsup.png" alt="" decoding="async">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============================= STOPKA ============================= -->
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <span class="footer-brand">TERRA ALTERA</span>
+    <span class="footer-note">© 2026 Terra Altera — A Song of the Forgotten Kingdoms. Wszelkie prawa zastrzeżone.</span>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
