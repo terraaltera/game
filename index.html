@@ -2187,7 +2187,7 @@ function showSummary(a,done){ const el=dlg("sumdlg","Podsumowanie fazy");
 /* ===== przejścia faz i fazy automatyczne (wykonuje je komputer, który zrobił ostatni ruch) ===== */
 const AUTO_PH=["prod","ev","war"];
 function goPhase(ph,lines){ const g=S.g, P=PHASES.find(p=>p[0]===ph); const t={patch:{phase:ph,...turnPatch(g,ph)},before:{phase:phaseOf(g),...turnBefore(g)}};
-  if(!AUTO_PH.includes(ph)) annAdd(t,P[1],lines||(TURN_PHASES.includes(ph)?[`Zaczyna ${seatName(turnOrder(g)[0])}.`]:ph==="col"?[colLine(g.col)]:[]));
+  if(!AUTO_PH.includes(ph)) annAdd(t,P[1],lines||(ph==="act"?[]:TURN_PHASES.includes(ph)?[`Zaczyna ${seatName(turnOrder(g)[0])}.`]:ph==="col"?[colLine(g.col)]:[]));
   Act.commit(t.patch,t.before,`faza: ${P[1]}${TURN_PHASES.includes(ph)?`. Zaczyna ${seatName(turnOrder(g)[0])}`:""}`); }
 /* każdy krok wykonuje się najwyżej raz na rundę na tym komputerze i tylko na komputerze, który zrobił ostatni ruch */
 const AFD={};
