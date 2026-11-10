@@ -753,7 +753,7 @@ function openGame(code){
     if(!g){ root.innerHTML=`<div class="screen"><div class="sheet"><div class="card-box"><h2>Nie znaleziono stołu ${esc(code)}</h2><div class="row"><button class="btn" id="back">Wróć</button></div></div></div></div>`; document.getElementById("back").onclick=()=>{location.hash="";showStart();}; return; }
     S.g=JSON.parse(JSON.stringify(g));
     if(S.drag && S.drag.id) return;   // nie przerywaj przeciągania; stan dorysuje się po upuszczeniu
-    route();
+    route(); annCheck();
     clearTimeout(Act._af); Act._af=setTimeout(autoFlow,300);
   });
 }
@@ -1677,7 +1677,7 @@ function applyFirstEvent(){ const g=S.g; if(!g.evB) return; const ev=curEventN()
   seatsInPlay(g).forEach(s=>{ const tt=tx(s,t); leadOnce(tt,s); (tt.notes||[]).forEach(x=>bn.push(`${seatName(s)}: ${x}`)); tt.notes=[]; });
   const mw=marketWar(marketCards().map(m=>m.id)); if(mw.length){ txWar(tx(seatsInPlay(g)[0],t),mw.length); bn.push(`na rynku ${mw.length} ${mw.length===1?"karta":"karty"} z ikoną wojny: znacznik wojny +${mw.length}`); }
   const cw=colWar(Object.keys(g.cards).filter(id=>{ const c=g.cards[id]; return c&&c.z==="table"&&/^col/.test(c.k)&&inRect(c,RC_RECT); })); if(cw.length){ txWar(tx(seatsInPlay(g)[0],t),cw.length); bn.push("kolonia z ikoną wojny: znacznik wojny +1"); }
-  annAdd(t,"Wydarzenie",[`„${curEventName()}”`,`Dla wszystkich: ${(EVALL[ev]||{}).t||"brak"}.`,...bn,EVMOD[ev]?`W tej rundzie: ${EVMOD[ev].t}.`:"",colLine(S.g.col)].filter(Boolean),"Era I · runda 1");
+  annAdd(t,"Wydarzenie",[`„${curEventName()}”`,`Dla wszystkich: ${(EVALL[ev]||{}).t||"brak"}.`,...bn,EVMOD[ev]?`W tej rundzie: ${EVMOD[ev].t}.`:"",colLine(S.g.col)].filter(Boolean),"Era I · runda 1",evIdNow());
   annAdd(t,"Dyplomacja",[],"Era I · runda 1");
   Act.commit(t.patch,t.before,`wydarzenie „${curEventName()}” dla wszystkich: ${(EVALL[ev]||{}).t||"brak"}${bn.length?" ("+bn.join("; ")+")":""}.${EVMOD[ev]?` W tej rundzie: ${EVMOD[ev].t}.`:""} Faza: Dyplomacja.`); }
 /* początek rundy: wszystko robi gra */
@@ -1714,7 +1714,7 @@ function startRound(){
   const msg=`rozpoczyna rundę ${r} (era ${ERA_PL[era]}): nowy rynek 12 kart, wydarzenie „${E?E[0]:"brak"}”, licytacja: ${E&&E[1]==="cf"?"kolonia i łaska cesarska":"2 kolonie"}${bid?", barbarzyńcy (tajna licytacja)":""}. Ambasadorzy wrócili.${upW.length?` Leżący robotnicy wstali (${upW.length}).`:""} Pierwszy gracz: ${seatName(seats[first])}.${seats.filter(s=>leadOf(s)===277&&(r===2||r===4)).map(s=>` Boudika (${seatName(s)}): ${r===2?"+3 kamienie":"+2 złota"}.`).join("")}${mw.length?` Na rynku ${mw.length===1?"jest 1 karta":`są ${mw.length} karty`} z ikoną wojny: znacznik wojny +${mw.length}.`:""}${cw.length?` Kolonia z ikoną wojny: znacznik wojny +${cw.length}.`:""}${evN&&EVALL[evN]?` Wydarzenie dla wszystkich: ${EVALL[evN].t}${bn.length?" ("+bn.join("; ")+")":""}.`:""}${evN&&EVMOD[evN]?` W tej rundzie: ${EVMOD[evN].t}.`:""} Faza: Dyplomacja.`;
   { const sub=`Era ${ERA_PL[era]} · runda ${r}`;
     annAdd(t,"Wydarzenie",[`„${E?E[0]:"brak"}”`,evN&&EVALL[evN]?`Dla wszystkich: ${EVALL[evN].t}.`:"",...bn,evN&&EVMOD[evN]?`W tej rundzie: ${EVMOD[evN].t}.`:"",`Licytacja: ${E&&E[1]==="cf"?"kolonia i łaska cesarska":"2 kolonie"}.`,
-      bid?"Barbarzyńcy! Za chwilę każdy gracz tajnie deklaruje, ile poświęca.":"",mw.length?`Na rynku ${mw.length} ${mw.length===1?"karta":"karty"} z ikoną wojny: znacznik wojny +${mw.length}.`:"",cw.length?`Kolonia z ikoną wojny: znacznik wojny +${cw.length}.`:"",`Pierwszy gracz: ${seatName(seats[first])}.`].filter(Boolean),sub,evImg(ev&&g.cards[ev]));
+      bid?"Barbarzyńcy! Za chwilę każdy gracz tajnie deklaruje, ile poświęca.":"",mw.length?`Na rynku ${mw.length} ${mw.length===1?"karta":"karty"} z ikoną wojny: znacznik wojny +${mw.length}.`:"",cw.length?`Kolonia z ikoną wojny: znacznik wojny +${cw.length}.`:"",`Pierwszy gracz: ${seatName(seats[first])}.`].filter(Boolean),sub,ev||null);
     annAdd(t,"Dyplomacja",[],sub); }
   Act.commit(t.patch,t.before,msg);
 }
@@ -2068,7 +2068,7 @@ function txWar(t,d){ let v=("warLv" in t.patch)?t.patch.warLv:warOf(); for(let k
 /* ===== karta wydarzenia: część B (dla wszystkich) i D (modyfikator rundy) ===== */
 function curEventCard(){ for(const id in S.g.cards){ const c=S.g.cards[id]; if(c&&/^ev/.test(c.k)&&c.z==="table"&&inRect(c,RC_RECT)) return c; } return null; }
 const curEventN=()=>{ const c=curEventCard(); return c?c.n:null; };
-const evImg=c=>c&&c.k&&c.n?faceSrc(c.k,c.n):null;
+const evIdNow=()=>{ const id=Object.keys(S.g.cards).find(k=>{ const x=S.g.cards[k]; return x&&/^ev/.test(x.k)&&x.z==="table"; }); return id||null; };
 const curEventName=()=>{ const n=curEventN(); return n&&EVENTS[n]?EVENTS[n][0]:""; };
 const EVALL={1:{pop:1,t:"darmowa populacja"},3:{evSend:2,t:"każdy może wysłać wolnego robotnika na technologię cywilną o 2 kamienie taniej"},5:{car:1,t:"ruch karawany"},7:{car:1,t:"ruch karawany"},9:{res:{e:-1},t:"−1 energia"},
   11:{res:{e:2},t:"+2 energie"},13:{car:1,t:"ruch karawany"},15:{res:{s:2},t:"+2 kamienie"},17:{t:"wszystkie pakty anulowane"},19:{loseImp:1,t:"każdy traci kartę imperialną (kto nie ma: −3 kultury)"},
@@ -2154,7 +2154,7 @@ function nextPhaseName(g){ const r=roundOf(g), L=phasesFor(r), i=L.findIndex(p=>
 let ANNSEQ=0;
 const phaseSub=()=>{ const r=roundOf(S.g); return `${r===7?"Epic":"Era "+ERA_PL[eraOfRound(r)]} · runda ${r}`; };
 function annAdd(t,title,lines,sub,img){ const g=S.g, id=Date.now()+"_"+String(ANNSEQ++%1000).padStart(3,"0");
-  t.patch.ann={...(t.patch.ann||{}),[id]:{t:Date.now(),ti:title,sub:sub||phaseSub(),l:(lines||[]).filter(Boolean),img:img||null}}; t.before.ann={...(t.before.ann||{}),[id]:null};
+  t.patch.ann={...(t.patch.ann||{}),[id]:{t:Date.now(),ti:title,sub:sub||phaseSub(),l:(lines||[]).filter(Boolean),ev:img||null}}; t.before.ann={...(t.before.ann||{}),[id]:null};
   const old=Object.keys(g.ann||{}).filter(k=>g.ann[k]).sort(); if(old.length>14) old.slice(0,old.length-14).forEach(k=>{ t.patch.ann[k]=null; t.before.ann[k]=g.ann[k]; }); return t; }
 function colLine(st){ const g=S.g; if(!st||(!st.c1&&!st.c2)) return "W tej rundzie nie ma kart do licytacji.";
   const nm=id=>id&&g.cards[id]?cardName(g.cards[id]):""; return `Licytacja: ${[nm(st.c1),nm(st.c2)].filter(Boolean).join(" i ")}. Zaczyna ${seatName(st.turn||seatOrderFrom(g.first)[0])}.`; }
@@ -2175,7 +2175,7 @@ function showBanner(title,sub,done){ let el=document.getElementById("phban"); if
   el.classList.remove("go"); void el.offsetWidth; el.hidden=false; el.classList.add("go");
   clearTimeout(el._t); el._t=setTimeout(()=>{ el.hidden=true; el.classList.remove("go"); if(done) done(); },2700); }
 function showSummary(a,done){ const el=dlg("sumdlg","Podsumowanie fazy");
-  el.innerHTML=`<header><div><h3>${esc(a.ti)}</h3><p class="an">${esc(a.sub||"")}</p></div></header><div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">${a.img?`<img src="${a.img}" alt="Karta wydarzenia" style="width:150px;max-width:40%;border-radius:8px;flex:0 0 auto">`:""}<ul class="sumlist" style="flex:1 1 220px;margin:0">${a.l.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div><div class="row"><button class="btn primary" id="sumOk">OK</button></div>`;
+  el.innerHTML=`<header><div><h3>${esc(a.ti)}</h3><p class="an">${esc(a.sub||"")}</p></div></header><div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">${(a.ev&&S.g.cards[a.ev])?`<img src="${faceSrc(S.g.cards[a.ev].k,S.g.cards[a.ev].n)}" alt="Karta wydarzenia" style="width:150px;max-width:40%;border-radius:8px;flex:0 0 auto">`:""}<ul class="sumlist" style="flex:1 1 220px;margin:0">${a.l.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div><div class="row"><button class="btn primary" id="sumOk">OK</button></div>`;
   el.hidden=false; const b=el.querySelector("#sumOk"); b.onclick=()=>{ el.hidden=true; done(); }; b.focus(); }
 
 /* ===== przejścia faz i fazy automatyczne (wykonuje je komputer, który zrobił ostatni ruch) ===== */
@@ -2414,7 +2414,7 @@ function doCompare(){ const g=S.g, C=EVCMP[curEventN()]||[], lines=[];
     lines.push(`${i+1}. ${bw==="b"?"Najlepsza":"Najgorsza"} ${CAT_PL[cat]} → ${cmpText(R)}. ${res.join("; ")}.`); });
   if(!C.length) lines.push("Ta karta nie ma wydarzeń porównawczych.");
   if(C.length) lines.push("Remisy: produkcja wpływów, siła, produkcja energii, kultury, kamienia, złota.");
-  annAdd(t,"Wydarzenia",[`„${curEventName()}”`,...lines],undefined,evImg(curEventCard()));
+  annAdd(t,"Wydarzenia",[`„${curEventName()}”`,...lines],undefined,evIdNow());
   annAdd(t,"Kolonizacja",[colLine(g.col)]);
   Act.commit(t.patch,t.before,"wydarzenia porównawcze: "+lines.join(" ")); }
 /* status wojny: konflikt, gdy znacznik doszedł do pola 4 (także gdy przeszedł dalej na pole 1) */
@@ -2487,7 +2487,7 @@ function renderTurn(g){
   if(bar&&bar._sig!==sig){ bar._sig=sig;
     bar.className="turnbar"+(on&&g.turn===S.me?" mine":"");
     const can=on&&(S.auto||S.me===g.turn);
-    bar.innerHTML= on? `<span class="who">${swatch(g.turn)}Aktywny gracz: ${esc(seatName(g.turn))}</span>${can&&moved?`<button class="btn primary" id="tEnd" title="Kończy ruch tego gracza; kolejka przechodzi na następnego">Koniec ruchu ▸</button>`:""}${(S.auto||S.me===g.turn)&&ph==="act"?`<button class="btn" id="tPass" title="Kończy akcje tego gracza w tej rundzie – kolejka go pomija">Pas</button>`:""}` : "";
+    bar.innerHTML= on? `<span class="who">${swatch(g.turn)}Aktywny gracz: ${esc(seatName(g.turn))}</span>${can&&moved?(ph==="dip"?`<button class="btn primary" id="tEnd" title="Kończy Twoją fazę dyplomacji w tej rundzie – nie oznacza spasowania w całej rundzie">Pas ▸</button>`:`<button class="btn primary" id="tEnd" title="Kończy ruch tego gracza; kolejka przechodzi na następnego">Koniec ruchu ▸</button>`):""}${(S.auto||S.me===g.turn)&&ph==="act"?`<button class="btn" id="tPass" title="Kończy akcje tego gracza w tej rundzie – kolejka go pomija">Pas</button>`:""}` : "";
     const te=bar.querySelector("#tEnd"); if(te) te.onclick=()=>{ closeAD(); endTurn(); Cam.preset("main"); };
     const tp=bar.querySelector("#tPass"); if(tp) tp.onclick=()=>{ closeAD(); passTurn(); Cam.preset("main"); }; }
   document.querySelectorAll(".tab[data-seat]").forEach(b=>b.classList.toggle("turn",!!on&&b.dataset.seat===g.turn));
