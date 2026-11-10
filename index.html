@@ -322,7 +322,7 @@ input[type=text]{background:#0f1317;border:1px solid var(--line);border-radius:6
 .mnrow .cf{flex-direction:column;flex:0 1 220px}
 .mnrow .cf img{width:170px}
 .sumlist{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px;font-size:14px;line-height:1.45}
-#act{position:absolute;left:16px;top:16px;width:min(470px,calc(100% - 32px));z-index:65;max-height:80%;overflow:auto;background:color-mix(in srgb,var(--panel) 95%,transparent);border:1px solid var(--brass);border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.55);padding:8px 10px;display:flex;flex-direction:column;gap:6px;cursor:default}
+#act{position:absolute;left:16px;top:16px;width:min(520px,calc(100% - 32px));z-index:65;max-height:80%;overflow:auto;background:color-mix(in srgb,var(--panel) 95%,transparent);border:1px solid var(--brass);border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.55);padding:8px 10px;display:flex;flex-direction:column;gap:6px;cursor:default}
 #act .ahd{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 #act .fname{font-family:var(--f-display);font-size:20px;color:var(--brass-2)}
 #act .who{font-size:13px;color:var(--ink-2);display:flex;gap:6px;align-items:center}
@@ -345,6 +345,9 @@ input[type=text]{background:#0f1317;border:1px solid var(--line);border-radius:6
 #act .atile.off,#act .atile:disabled{opacity:.35;filter:grayscale(.8);cursor:not-allowed}
 #act .atile.off:disabled{pointer-events:auto}
 #act .tico{width:48px;height:48px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+#act .atile .rk{flex:none}
+#act .tico.sm{width:34px;height:34px}
+#act .tcount{align-self:center;font-size:12.5px;color:#f0d68a}
 #act .tlab{font-size:13px;font-weight:700;max-width:200px;text-align:left}
 #act .adet{border:1px solid #8a7330;border-radius:10px;padding:8px;background:rgba(232,199,102,.06);display:flex;flex-direction:column;gap:6px}
 #act .adh{display:flex;align-items:center;gap:6px;font-size:14px;color:#f0d68a}
@@ -979,7 +982,7 @@ const Act = {
     /* aktywny gracz zmienia się tylko przyciskiem „Koniec ruchu” (albo zmianą fazy); w trybie jednego komputera ruchy zapisują się na aktywnego gracza */
     const t=Date.now(); const key=t+"_"+S.me+"_"+Math.floor(Math.random()*1000);
     const full = JSON.parse(JSON.stringify(patch));
-    if(msg) (full.log||(full.log={}))[key]={t,s:who||S.me,m:msg,b:before||null};
+    if(msg) (full.log||(full.log={}))[key]={t,s:who==="-"?null:(who||S.me),m:msg,b:before||null}; /* who "-" = wpis niezależny od gracza */
     full.drv=CID;   // ten komputer zrobił ostatni ruch – on prowadzi fazy automatyczne
     // przycinanie dziennika do 80 wpisów
     const keys=Object.keys(S.g.log||{}).filter(k=>S.g.log[k]).sort();
@@ -1053,7 +1056,7 @@ const Act = {
     if(!keys.length){ UI.toast("Nie ma ruchu do cofnięcia."); return; }
     const k=keys[keys.length-1]; const e=log[k];
     const patch=JSON.parse(JSON.stringify(e.b)); patch.log={[k]:null};
-    const t=Date.now(); patch.log[t+"_"+S.me+"_u"]={t,s:S.me,m:`cofa ruch: „${e.m}”`,b:null};
+    /* bez wpisu „cofa ruch” – cofnięte wpisy po prostu znikają z dziennika */
     PK.open=false; { const pe=document.getElementById("pickdlg"); if(pe) pe.hidden=true; } if(typeof closeCF==="function") closeCF();
     Store.deepMerge(S.g,patch); Table.render(); Store.patch(S.code,patch);
     /* cel publiczny cofa się razem z ruchem, który go spowodował */
@@ -1201,7 +1204,7 @@ let GRP=null, REGN=0, GRPN=0, MKON=new Set(), MKSEL=[];
 function regT(tg,e){ const T=TG[tg.k]||(TG[tg.k]={...tg,e:[]}); e._k=tg.k; e._n=++REGN; T.e.push(e); return TGM; }
 const VLAB={1:"Wariant: za 1 kamień mniej",2:"Wariant: 1 wpływ i za 2 kamienie mniej"};
 const rectAround=(p,h)=>[p[0]-h,p[1]-h,p[0]+h,p[1]+h];
-const kiLab=()=>KIOV.ctx==="sep"?"Osobna akcja z karty imperialnej":"Akcja pola z kartą imperialną";
+const kiLab=()=>KIOV.ctx==="sep"?"Osobna akcja z karty":"Tańsza akcja pola (z kartą)";
 /* opcja: płaci, wykonuje ruchy pionków/kart, zapisuje w dzienniku. o.tg = miejsce na planszy (podświetlenie) */
 function opt(label,delta,fn,o={}){
   const res=S.g.players[AD.seat].res||{};
@@ -1211,7 +1214,7 @@ function opt(label,delta,fn,o={}){
   const plan=payPlan(AD.seat,delta), lack=plan.ok?[]:Object.keys(delta).filter(r=>delta[r]<0&&(res[r]||0)+delta[r]<0);
   const done=o.key&&AD.used[o.key];
   if(o.tg){ if(done||o.dis) return ""; if(KIOV&&!KIOV.hit) return "";
-    const mk=regT(o.tg,{label:KIOV?kiLab()+(o.vl?" · "+o.vl:""):(o.vl||label),ico:o.ico||"",delta:plan.d,joker:plan.joker?plan.jtxt:"",run,gain:o.gain||"",lack,wk:!!o.wk,pre:KIOV?KIOV.j:undefined,kt:KIOV?KIOV.txt:""});
+    const mk=regT(o.tg,{label:KIOV?kiLab()+(o.vl?" · "+o.vl:""):(o.vl||label),ico:o.ico||"",vm:o.vm,delta:plan.d,joker:plan.joker?plan.jtxt:"",run,gain:o.gain||"",lack,wk:!!o.wk,pre:KIOV?KIOV.j:undefined,kt:KIOV?KIOV.txt:""});
     if(o.spk&&!KIOV) specAvail(AD.seat,o.spk).forEach(sp=>{ const d2={...delta}; d2.s=Math.min(0,(d2.s||0)+sp.n); if(!d2.s) delete d2.s;
       const run2=()=>{ if(cantPay(AD.seat,d2)) return; const pp=payPlan(AD.seat,d2), t=tx(AD.seat); for(const r in pp.d) t.res(r,pp.d[r]); if(pp.joker) t.note(`chwała jako joker za ${pp.jtxt}`); if(fn) fn(t); t.top("spUsed",{[sp.id]:AD.seat},{[sp.id]:null});
         t.go((o.log||label)+` (właściwość karty ${sp.nm}: −${sp.n} kam., jednorazowo)`); if(o.key) AD.used[o.key]=true; if(AD.sub>0&&o.main) AD.sub--; if(o.after) o.after(); renderAD(); };
@@ -1229,7 +1232,7 @@ const sec=(title,body,note)=>{ if(KIOV){ KIOV.hit=false; return ""; }
   if(!t&&!b){ const w=pickMsgs(body); return w?`<div class="bsec"><span class="bt">${title}</span>${w}</div>`:""; }
   const ic=secIco(title);
   return `<div class="bsec${t?" tg":""}"><span class="bt">${ic?`<img class="sico" src="${asset("ico/"+ic+".png")}" alt="">`:""}${title}${t?' <em>– wybierz na planszy</em>':""}</span>${b?`<span class="bb">${body}</span>`:pickMsgs(body)}</div>`; };
-const SEC_ICO=[[/Odkryj|odkryci/,"disc"],[/populacj/i,"pop"],[/terytori/,"axe"],[/cywiln/,"civ"],[/militarn|wojownik/i,"mil"],[/fort/i,"mil"],[/technologi/i,"tech"],[/cud/i,"won"],[/Karawan|karawan/,"camel"],[/kart[ęa] imperialn/,"crown"],[/chwał/,"glory"]];
+const SEC_ICO=[[/Odkryj|odkryci/,"disc"],[/populacj/i,"pop"],[/terytori/,"axe"],[/cywiln/,"civ"],[/militarn|wojownik/i,"mil"],[/fort/i,"fort"],[/technologi/i,"tech"],[/cud/i,"won"],[/Karawan|karawan/,"camel"],[/kart[ęa] imperialn/,"crown"],[/chwał/,"glory"]];
 const secIco=t=>{ const m=SEC_ICO.find(([r])=>r.test(String(t))); return m?m[1]:""; };
 const FIELD_ICO={bld:"axe",exp:"disc",phi:"tech",gov:"civ",bis:"won",arc:"won",war:"mil",tra:"camel",kpop:"pop",evc:"civ"};
 /* okno akcji: pływające, przesuwane za nagłówek; pozycja zapamiętana w tej przeglądarce */
@@ -1277,13 +1280,14 @@ function secBuy(title,disc,o={}){
     if(KIOV&&KK.k!==KIOV.k) return;
     const price=Math.max(0,m.price-disc-e2-KK.n);
     const run=()=>{ if(cantPay(s,{g:-price})) return; const pp=payPlan(s,{g:-price}), t=tx(s); for(const r in pp.d) t.res(r,pp.d[r]); if(pp.joker) t.note(`chwała jako joker za ${pp.jtxt}`); kc(t,s,KK.k); const pl=techPlace(s,T); t.card(m.id,{x:Math.round(pl.x),y:Math.round(pl.y),sc:pl.sc||null,r:Act.maxZ()+1,...(T.t==="g"?{gb:S.g.turnT||1}:{})}); if(m.row===0) t.imp();
+      if(T.t==="w") dropUnfinishedWonders(t,s);
       if(T.b==="h") takeGlory(t,s); if(T.b==="u"){ t.upg=(t.upg||0)+1; t.upgT={card:m.id}; }
       if(leadOf(s)===267&&T.t!=="w"){ t.res("i",1); t.note("Juliusz Cezar: +1 wpływ za zakup technologii"); }
       t.go(`kupuje ${T.nm||DECK_ONE[m.c.k]} z rynku za ${price} zł${m.row===0?" i bierze kartę imperialną":""}`); if(o.key) AD.used[o.key]=true; if(AD.sub>0&&o.main) AD.sub--; renderAD(); };
     const bp=payPlan(s,{g:-price}), lack=bp.ok?[]:["g"];
     const gain=[T.t==="w"?`Cud: ${T.st?T.st.length:"?"} ${T.st&&T.st.length<5?"etapy":"etapów"} budowy, po ukończeniu: ${T.end||prodText(T.p)}`:(T.p?`Za robotnika: ${prodText(T.p)} (koszt robotnika: ${T.cost||0} kam.)`:""),
       m.row===0?"karta imperialna do ręki":"", T.b==="h"?"bonus: chwała":"", T.b==="u"?"bonus: upgrade robotnika":"", e2?`wydarzenie: −${e2} zł`:"", disc?`pole: −${disc} zł`:""].filter(Boolean).join(" · ");
-    h+=regT({ai:T.t==="w"?"won":"tech",k:"m:"+m.id,nm:T.nm||DECK_ONE[m.c.k],img:faceSrc(m.c.k,m.c.n)},{label:KIOV?kiLab():`${title}: ${m.price} zł na rynku`,delta:bp.d,joker:bp.joker?bp.jtxt:"",run,lack,gain,pre:KIOV?KIOV.j:undefined,kt:KIOV?KIOV.txt:""}); });
+    h+=regT({ai:T.t==="w"?"won":"tech",k:"m:"+m.id,nm:T.nm||DECK_ONE[m.c.k],img:faceSrc(m.c.k,m.c.n)},{label:(KIOV?kiLab():`${title}: ${m.price} zł na rynku`)+(T.t==="w"&&wondersOf(s).some(W=>W.built<W.st.length)?` – uwaga: niedokończony cud ${wondersOf(s).filter(W=>W.built<W.st.length).map(W=>W.nm).join(", ")} odpadnie`:""),delta:bp.d,joker:bp.joker?bp.jtxt:"",run,lack,gain,pre:KIOV?KIOV.j:undefined,kt:KIOV?KIOV.txt:""}); });
   return sec(title+(disc?` (−${disc} złota)`:""),h);
 }
 const inMarket=c=>c&&c.z==="table"&&c.x>MARKET.x&&c.x<MARKET.x+MARKET.w&&c.y>MARKET.y&&c.y<MARKET.y+MARKET.h;
@@ -1347,7 +1351,7 @@ function secSendTerr(mode,o={}){
   ["szare","niebieskie"].forEach(c=>{ for(let row=1;row<=4;row++){ const j=TERR.findIndex(t=>t.c===c&&t.row===row); if(row<4&&!d[j]) continue;
     const base=TERR_WORK[c][row-1], pr=TERR_PROD[c][row-1], rk=c==="szare"?"s":"e", nOn=workersOn(s,terrRect(s,c,row)).length;
     modes.forEach(m=>rows.push(opt(terrNm(c,row),discDelta(base,m,ed),tt=>{ kc(tt,s,K.k); sendWorker(tt,s,{kind:"terr",c,row,p:{[rk]:pr}}); },
-      {...o,spk:"tr",dis:o.dis||noW,vl:m?"Nowy robotnik · "+VLAB[m]:"Nowy robotnik",ico:AICO.wrk(s),wk:true,tg:{ai:"axe",k:`t:${c}:${row}`,r:terrRect(s,c,row),nm:terrNm(c,row)},log:`wysyła robotnika na terytorium (${terrNm(c,row).toLowerCase()})`,gain:`${AICO.gear}${RK(rk,"+"+pr)} &nbsp; <span title="robotników na polu">${AICO.wrk(s).replace('class="aico"','class="aico sm"')}×${nOn}</span>`})));
+      {...o,spk:"tr",dis:o.dis||noW,vl:m?"Nowy robotnik · "+VLAB[m]:"Nowy robotnik",vm:m||undefined,ico:AICO.wrk(s),wk:true,tg:{ai:"axe",k:`t:${c}:${row}`,r:terrRect(s,c,row),nm:terrNm(c,row)},log:`wysyła robotnika na terytorium (${terrNm(c,row).toLowerCase()})`,gain:`${AICO.gear}${RK(rk,"+"+pr)} &nbsp; <span title="robotników na polu">${AICO.wrk(s).replace('class="aico"','class="aico sm"')}×${nOn}</span>`})));
     /* upgrade z niższego poziomu tej samej kolumny – w tym samym oknie obok budowy nowego robotnika */
     upgradesOf(s).filter(u=>u.hi.terr&&u.hi.terr.c===c&&u.hi.terr.row===row).forEach(u=>rows.push(opt(`Upgrade z ${terrNm(u.lo.terr.c,u.lo.terr.row)} → ${terrNm(c,row)}`,{s:-u.cost},tt=>applyUpgrade(tt,s,u),
       {...o,spk:"tr",dis:o.dis||(u.cost>((S.g.players[s].res||{}).s||0)),vl:`Upgrade z poziomu ${4-u.lo.terr.row}`,ico:AICO.upg,tg:{ai:"axe",k:`t:${c}:${row}`,r:terrRect(s,c,row),nm:terrNm(c,row)},log:`upgrade robotnika (${terrNm(u.lo.terr.c,u.lo.terr.row).toLowerCase()} → ${terrNm(c,row).toLowerCase()})`,gain:`${AICO.gear}${Object.keys(u.dp).filter(k=>u.dp[k]).map(k=>RK(k,(u.dp[k]>0?"+":"")+u.dp[k])).join("")||"bez zmiany produkcji"}`}))); } });
@@ -1360,7 +1364,7 @@ function secTech(kind,mode,o={}){
   if(!list.length) return sec(title,"<p class='an'>Nie masz jeszcze takiej technologii.</p>");
   const noW=!freeWorkers(s).length&&!AD.src, modes=(mode===2||o.variants)?[1,2]:[mode];
   const rows=[]; list.forEach(T=>{ const nOn=workersOn(s,T.rect).length, c=S.g.cards[T.id];
-    modes.forEach(m=>rows.push(opt(`${T.nm}`,discDelta(T.cost,m,ed),tt=>{ kc(tt,s,K.k); sendWorker(tt,s,{kind:"tech",T}); if(o.onT) o.onT(tt); },{...o,spk:kind==="civ"?"c":"m",dis:o.dis||noW,vl:modes.length>1?VLAB[m]:"",wk:true,
+    modes.forEach(m=>rows.push(opt(`${T.nm}`,discDelta(T.cost,m,ed),tt=>{ kc(tt,s,K.k); sendWorker(tt,s,{kind:"tech",T}); if(o.onT) o.onT(tt); },{...o,spk:kind==="civ"?"c":"m",dis:o.dis||noW,vl:modes.length>1?VLAB[m]:"",vm:modes.length>1?m:undefined,ico:AICO.wrk(s),wk:true,
       tg:{ai:kind==="civ"?"civ":"mil",k:"c:"+T.id,r:T.rect,nm:(kind==="civ"?"Robotnik na: ":"Wojownik na: ")+T.nm,img:c?faceSrc(c.k,c.n):null},log:`wysyła robotnika na ${T.nm}${o.extra?" (bonus z wydarzenia)":""}`,
       gain:`${prodText(T.p)} za robotnika · koszt z karty: ${T.cost} · robotników na karcie: ${nOn}${T.up?` · utrzymanie: −${Object.keys(T.up).map(k=>T.up[k]+" "+RES_INFO[k][0]).join(", ")} na rundę`:""}`}))); });
   return sec(title,freeHint(s,o)+rows.join(""));
@@ -1370,7 +1374,7 @@ function secWonder(mode,o={}){
   if(!list.length) return sec("Zbuduj etap cudu","<p class='an'>Nie masz cudu do budowy. Cud kupuje się u Biskupa.</p>");
   const K=kd(s,["ws","as"]), modes=(mode===2||o.variants)?[1,2]:[mode]; const rows=[];
   list.forEach(W=>{ const cost=W.st[W.built]; const ext={d:0,src:""}, c=S.g.cards[W.id];
-    modes.forEach(m=>rows.push(opt(`${W.nm}: etap ${W.built+1} z ${W.st.length}`,discDelta(cost,m,ext.d+K.n),tt=>{ kc(tt,s,K.k); buildStage(tt,s,W,ext); },{...o,spk:"ws",vl:modes.length>1?VLAB[m]:"",
+    modes.forEach(m=>rows.push(opt(`${W.nm}: etap ${W.built+1} z ${W.st.length}`,discDelta(cost,m,ext.d+K.n),tt=>{ kc(tt,s,K.k); buildStage(tt,s,W,ext); },{...o,spk:"ws",vl:modes.length>1?VLAB[m]:"",vm:modes.length>1?m:undefined,
       tg:{ai:"won",k:"w:"+W.id,r:cardRect(c),nm:`${W.nm}: etap ${W.built+1} z ${W.st.length}`,img:faceSrc(c.k,c.n)},log:`buduje etap ${W.built+1} cudu ${W.nm}`,
       gain:`Koszt etapu: ${cost}${ext.d?` (−${ext.d}: ${ext.src})`:""}. ${W.built+1===W.st.length?`Ostatni etap: ${W.end?W.end:prodText(W.p)}.`:"Cud działa po zbudowaniu wszystkich etapów."}`}))); });
   return sec("Zbuduj etap cudu",rows.join(""));
@@ -1387,15 +1391,18 @@ function secFort(cost,o={}){
     free.map(G=>opt(`Fort: ${G.nm}`,fG?{s:-Math.max(0,cost-K.n)}:{s:-Math.max(0,cost-K.n),h:-1},tt=>{ if(fG) kc(tt,s,"fortG"); kc(tt,s,K.k); buildFort(tt,s,G); },{...o,dis:noH,tg:{ai:"mil",k:"fort",r:fortRect(s),nm:"Zbuduj fort"},log:`buduje fort (${G.nm})`,gain:`+2 siły, produkcja ${PROD_GEN[G.r]} +1${fG?" · karta imperialna: bez kosztu chwały":""}`})).join(""));
 }
 function secMain(){
-  return `<div class="subhead">Dowolna akcja główna · pozostało: <b>${AD.sub}</b></div>`+
-    secBuy("Kup technologię albo cud",0,{main:true,what:"all"})+secPop(0,{main:true})+secDiscover(0,{main:true})+secSendTerr(0,{main:true})+
+  return secBuy("Kup technologię",0,{main:true,what:"tech"})+secBuy("Kup cud",0,{main:true,what:"wonder"})+secPop(0,{main:true})+secDiscover(0,{main:true})+secSendTerr(0,{main:true})+
     secTech("civ",0,{main:true})+secTech("mil",0,{main:true})+secWonder(0,{main:true})+secFort(3,{main:true});
 }
 function pairBonus(other,text,fn){
   if(S.g.pieces[AD.pawn]?.k!=="amb") return "";
   const mine=pawnsOn(other,"amb").some(id=>S.g.pieces[id].s===AD.seat);
-  if(!mine) return "";
-  return sec("Premia pary",opt(text,{},fn,{key:"pair",log:`premia pary (${FIELDS[AD.k].n} + ${FIELDS[other].n})`}));
+  if(!mine||KIOV) return "";
+  /* premia pary wykonuje się sama (raz na rundę dla tej pary pól), z komunikatem */
+  const key=`${roundOf(S.g)}_${AD.seat}_${AD.k}`; if((S.g.pairB||{})[key]) return "";
+  const s=AD.seat, f=AD.k; setTimeout(()=>{ if((S.g.pairB||{})[key]) return; const t=tx(s); t.top("pairB",{[key]:1},{[key]:null}); fn(t);
+    t.go(`premia pary (${FIELDS[f].n} + ${FIELDS[other].n}): ${text.toLowerCase()}`); UI.toast(`Premia pary ${FIELDS[f].n} + ${FIELDS[other].n}: ${text.toLowerCase()}.`); if(AD.open) renderAD(); },0);
+  return "";
 }
 function renderAD(){
   let el=document.getElementById("act");
@@ -1446,7 +1453,7 @@ function renderAD(){
     case "gov": body=secTech("civ",AD.v,{variants:true,key:"send"})+pairBonus("phi","Ruch karawany",t=>txCaravan(t,s,1)); break;
     case "bis": body=secBuy("Kup cud",1,{key:"buy",what:"wonder"})+sec("Dodatkowo",opt("Zapłać 1 złoto i weź kartę imperialną",{g:-1},t=>t.imp(),{key:"imp",dis:handImp(s)>=impLimit(levelOf(s,"i")),log:"płaci 1 złoto i bierze kartę imperialną do ręki",gain:handImp(s)>=impLimit(levelOf(s,"i"))?`Masz już limit kart na ręce (${impLimit(levelOf(s,"i"))}).`:"Karta z talii trafi od razu do ręki gracza."})); break;
     case "arc": body=secWonder(AD.v,{variants:true,key:"stage"}); break;
-    case "war": body=secTech("mil",1,{key:"send"})+secFort(2,{key:"fort",title:"Albo zbuduj fort (3 kamienie − 1 zniżki, 1 chwała)"})+
+    case "war": body=secTech("mil",1,{key:"send"})+secFort(2,{key:"send",title:"Albo zbuduj fort (3 kamienie − 1 zniżki, 1 chwała)"})+
       sec("Dodatkowo",opt("Zapłać 1 złoto i kup 1 chwałę",{g:-1},t=>takeGlory(t,s),{key:"glory",log:"kupuje chwałę za 1 złoto",gain:`Żeton zdejmie się z toru sam${gloryCost(g.glory||0).i?" (kosztuje też 1 wpływ)":gloryCost(g.glory||0).e?" (kosztuje też 1 energię)":""}.`})); break;
     case "sha": {
       const occ=Object.keys(FIELDS).filter(f=>f!=="sha"&&pawnsOn(f).length);
@@ -1509,7 +1516,7 @@ function renderAD(){
       kiOpts.push({j,o,txt:kiOptText(o),ents,direct:!(o.t==="disc"&&ents.length),ok:!(o.t==="disc")||ents.some(e=>!e.lack.length)}); }); }
   const avail=G=>G.ents.some(e=>!e.lack.length)||/<button(?![^>]*disabled)[^>]*data-h/.test(G.body);
   const shown=groups.filter(avail);
-  if(AD.grp&&!shown.some(G=>G.title===AD.grp)) AD.grp=null;
+  if(AD.grp&&!shown.some(G=>G.title===String(AD.grp).split("#")[0])) AD.grp=null;
   const RG={złot:"g",kamie:"s",energi:"e",wpływ:"i"}, RGEN={g:"złota",s:"kamienia",e:"energii",i:"wpływu"};
   const ACTN={disc:"odkrycie terytorium",pop:"zwiększenie populacji",axe:"wysłanie robotnika na terytorium",civ:"wysłanie robotnika na technologię cywilną",mil:"akcję militarną",tech:"zakup technologii",won:"cud",crown:"kartę imperialną",camel:"karawanę"};
   const disc=t=>{ const m=/\(−(\d+) (złot|kamie|energi|wpływ)/.exec(t); return m?{n:+m[1],r:RG[m[2]]}:null; };
@@ -1520,34 +1527,57 @@ function renderAD(){
     return d&&ACTN[G.ico]?`Zniżka na ${ACTN[G.ico]}: ${d.n} ${RES_INFO[d.r][0]}. ${base}.`:base+"."; };
   const tile=(id,ic,chip,label,help,on,sel,off)=>`<button class="atile ${sel?"sel":""} ${off?"off":""}" data-h="${id}" data-help="${esc(help)}" ${on?"":"disabled"}>${chip||""}${icoHTML(ic)||`<span class="tlab">${esc(label)}</span>`}</button>`;
   let tiles="";
-  shown.forEach(G=>{ const i=AH.length; AH.push(()=>{ AD.grp=AD.grp===G.title?null:G.title; AD.kij=undefined; AD.crown=false; }); const d=disc(G.title);
-    tiles+=tile(i,G.ico,d?RK(d.r,d.n):"",plain(G.title),helpOf(G),true,AD.grp===G.title); });
+  /* wykonanie jednej opcji (miejsca) – wspólne dla wierszy i kafelków „od razu” */
+  const runEnt=e=>{ if(cantPay(s,e.delta)) return; AD.wk=AD.src?null:(AD.wkSel||"wrk"); if(e.pre!==undefined&&AD.ki){ const id=AD.ki; AD.ki=null; AD.crown=false; AD.kij=undefined; Object.assign(KP,{open:false,id,ph:"act",seat:s,sel:{act:e.pre}}); playKI(); } e.run(); AD.wk=null; AD.grp=null; };
+  const fw0=freeWorkers(s), needWk=fw0.some(id=>g.pieces[id].k==="gen")||!fw0.length;
+  const VCH={1:RK("s","1"),2:RK("i","-1")+RK("s","2")};
+  const BTN_RE=/<button class="(ao[^"]*|btn)" data-h="(\d+)"([^>]*)>([\s\S]*?)<\/button>/g;
+  const TRADE_PIC={"Wpływ ⇄ kamień albo energia":RK("i","1")+"⇄"+RK("s","1")+"/"+RK("e","1"),"Złoto ⇄ kamień i energia":RK("g","1")+"⇄"+RK("s","1")+RK("e","1"),
+    "Złoto i wpływ → karta imperialna":RK("g","-1")+RK("i","-1")+"→"+icoHTML("crown","tico sm")};
+  const fieldIcoOf=lab=>{ const f=Object.keys(FIELDS).find(f=>plain(lab).startsWith(FIELDS[f].n)); return f?FIELD_ICO[f]:""; };
+  shown.forEach(G=>{ const d=disc(G.title);
+    if(G.ents.length){ const vms=[...new Set(G.ents.map(e=>e.vm).filter(Boolean))];
+      if(vms.length>1){ vms.forEach(v=>{ const id=G.title+"#"+v; if(!G.ents.some(e=>(e.vm===v||!e.vm)&&!e.lack.length)) return;
+          const i=AH.length; AH.push(()=>{ AD.grp=AD.grp===id?null:id; AD.kij=undefined; AD.crown=false; });
+          tiles+=tile(i,G.ico,VCH[v],plain(G.title),`${plain(G.title)} – ${VLAB[v].toLowerCase()}.`,true,AD.grp===id); }); return; }
+      const one=G.ents.length===1&&!/^m:/.test(G.ents[0]._k)&&!(G.ents[0].wk&&needWk)&&!/<button/.test(G.body);
+      const i=AH.length; AH.push(one?()=>runEnt(G.ents[0]):()=>{ AD.grp=AD.grp===G.title?null:G.title; AD.kij=undefined; AD.crown=false; });
+      tiles+=tile(i,G.ico,d?RK(d.r,d.n):"",plain(G.title),helpOf(G)+(one?" Kliknij, żeby wykonać.":""),true,AD.grp===G.title); return; }
+    /* sekcja z samymi przyciskami: każdy przycisk = osobna ikona, klik od razu wykonuje */
+    for(const m of String(G.body).matchAll(BTN_RE)){ if(/disabled/.test(m[3])) continue; const inner=m[4];
+      const al=(/<span class="al">([\s\S]*?)<\/span>/.exec(inner)||[])[1], ac=inner.includes('<span class="ac">')?inner.slice(inner.indexOf('<span class="ac">')+17,inner.lastIndexOf("</span>")):"";
+      const lab=plain(al||inner), ic=fieldIcoOf(lab)||secIco(lab), cost=/class="rk/.test(ac)?ac.replace(/<span class="ckl">[\s\S]*?<\/span>/,""):"";
+      const pic=TRADE_PIC[lab]||"";
+      const short=lab.replace(/\s*\(−[^)]*\)/,"").replace(/^Kup 3\. ambasadora$/,"3. ambasador").replace(/^Weź 1 złoto, 1 wpływ, 1 energię i 1 kamień$/,"").replace(/^Wykonaj 2 dowolne akcje główne$/,"2 × dowolna akcja").replace(/^Wykonaj 1 dowolną akcję główną$/,"1 × dowolna akcja");
+      tiles+=`<button class="atile" data-h="${m[2]}" data-help="${esc(lab)}">${pic||cost}${pic?"":icoHTML(ic)||(short?`<span class="tlab">${esc(short)}</span>`:"")}</button>`; }
+    const cnt=/(pozostało \d+ z \d+|wybierz jeszcze: \d+|użycia Warsztatów: \d+ z 3)/.exec(plain(G.title)); if(cnt) tiles+=`<span class="tcount">${esc(cnt[1])}</span>`; });
   if(kiAllowed&&handKI.length){ const used=kiUsedThisTurn(s); const i=AH.length; AH.push(()=>{ if(used) return; AD.crown=!AD.crown; AD.grp=null; if(!AD.crown){ AD.ki=null; AD.kij=undefined; } });
     tiles+=tile(i,"crown","", "Karta imperialna", used?"Karta imperialna została już zagrana – w tej turze nie możesz zagrać kolejnej.":"Zagraj kartę imperialną: kliknij ikonę, a potem kartę w ręce na dole.", !used, AD.crown||!!AD.ki, used); }
-  /* wybór robotnika: wolny, geniusz albo przeniesienie z planszy */
+  /* wybór robotnika – tylko gdy jest wybór (geniusz albo brak wolnych robotników) */
   const wkSel=()=>{ const fw=freeWorkers(s), hasW=fw.some(id=>g.pieces[id].k==="wrk"), hasG=fw.some(id=>g.pieces[id].k==="gen"), src=srcWorkers(s);
     if(!AD.wkSel) AD.wkSel=hasW?"wrk":hasG?"gen":"wrk";
+    if(hasW&&!hasG) return "";
     const b=(lab,act,on,help)=>{ const i=AH.length; AH.push(act); return `<button class="vbtn" aria-pressed="${on}" data-h="${i}" data-help="${esc(help)}">${lab}</button>`; };
     let h=`<div class="wsel"><span class="wl">Kogo wysyłasz:</span>`;
-    if(hasW) h+=b(`${AICO.wrk(s).replace('class="aico"','class="aico sm"')} wolny robotnik`,()=>{ AD.wkSel="wrk"; AD.src=null; },!AD.src&&AD.wkSel==="wrk","Nowy robotnik z zapasu.");
+    if(hasW) h+=b(`${AICO.wrk(s).replace('class="aico"','class="aico sm"')} robotnik`,()=>{ AD.wkSel="wrk"; AD.src=null; },!AD.src&&AD.wkSel==="wrk","Zwykły robotnik z zapasu.");
     if(hasG) h+=b(`${AICO.wrk(s).replace('class="aico"','class="aico sm"')}★ geniusz`,()=>{ AD.wkSel="gen"; AD.src=null; },!AD.src&&AD.wkSel==="gen","Geniusz daje +1 do produkcji.");
     if(src.length) h+=`<select class="wsrc" data-help="Przenieś robotnika stojącego na planszy – tam produkcja spadnie."><option value="">${hasW||hasG?"albo przenieś z…":"przenieś z…"}</option>${src.map(id=>`<option value="${id}" ${AD.src===id?"selected":""}>${esc(workerHome(s,id).nm)}</option>`).join("")}</select>`;
     return h+`</div>`; };
   /* lista opcji (miejsc) w oknie: wiersz = miejsce, przyciski = warianty z kosztem */
   const MK=[];
-  const optRows=(ents)=>{ const byK={}; ents.forEach(e=>{ if(/^m:/.test(e._k)){ MK.push(e); return; } (byK[e._k]=byK[e._k]||[]).push(e); });
+  const optRows=(ents,short)=>{ const byK={}; ents.forEach(e=>{ if(/^m:/.test(e._k)){ MK.push(e); return; } (byK[e._k]=byK[e._k]||[]).push(e); });
     let h=""; for(const key in byK){ const T=TG[key]; if(!T) continue;
-      h+=`<div class="orow" data-help="${esc(plain(T.nm))}"><span class="onm">${T.img?`<img class="othumb" src="${T.img}" alt="">`:""}${esc(plain(T.nm||""))}</span><span class="obtns">${byK[key].map(e=>{ const i=AH.length;
-        AH.push(()=>{ if(cantPay(s,e.delta)) return; AD.wk=AD.src?null:(AD.wkSel||"wrk"); if(e.pre!==undefined&&AD.ki){ const id=AD.ki; AD.ki=null; AD.crown=false; AD.kij=undefined; Object.assign(KP,{open:false,id,ph:"act",seat:s,sel:{act:e.pre}}); playKI(); } e.run(); AD.wk=null; AD.grp=null; });
-        return `<button class="ao obtn ${e.lack.length?"lack":""}" data-h="${i}" ${e.lack.length?"disabled":""} data-help="${esc(plain(e.label)+(e.joker?` – brakuje ${e.joker}, zapłacisz chwałą`:"")+(e.lack.length?` – brakuje: ${e.lack.map(r=>RES_INFO[r][0]).join(", ")}`:""))}">${e.ico||""}<span class="al">${esc(e.label)}</span><span class="ac">${costHTML(e.delta)}</span></button>`; }).join("")}</span></div>`; }
+      h+=`<div class="orow" data-help="${esc(plain(T.nm))}"><span class="onm">${T.img?`<img class="othumb" src="${T.img}" alt="">`:""}${esc(plain(T.nm||"").replace(/^(Robotnik na|Wojownik na|Odkryj terytorium): /,""))}</span><span class="obtns">${byK[key].map(e=>{ const i=AH.length;
+        AH.push(()=>runEnt(e)); const lab=short?String(e.label).replace(/ · Wariant:.*$/,"").replace(/^Wariant:.*$/,"Wykonaj"):e.label;
+        return `<button class="ao obtn ${e.lack.length?"lack":""}" data-h="${i}" ${e.lack.length?"disabled":""} data-help="${esc(plain(e.label)+(e.joker?` – brakuje ${e.joker}, zapłacisz chwałą`:"")+(e.lack.length?` – brakuje: ${e.lack.map(r=>RES_INFO[r][0]).join(", ")}`:""))}">${e.ico||""}<span class="al">${esc(lab)}</span><span class="ac">${costHTML(e.delta)}</span></button>`; }).join("")}</span></div>`; }
     if(MK.length) h+=`<p class="ohint">Wybierz kartę na torze kart u góry (podświetlone).</p>`;
     return h; };
   let detail="";
-  const Gs=shown.find(G=>G.title===AD.grp);
-  if(Gs){ detail+=`<div class="adet"><div class="adh">${icoHTML(Gs.ico,"sico")}<b>${esc(plain(Gs.title))}</b></div>`;
-    if(Gs.ents.some(e=>e.wk&&!/^m:/.test(e._k))) detail+=wkSel();
-    detail+=optRows(Gs.ents.filter(e=>!e.lack.length||true));
-    if(/<button/.test(Gs.body)) detail+=`<div class="obody">${Gs.body}</div>`;
+  const [gT,gV]=String(AD.grp||"").split("#"), Gs=shown.find(G=>G.title===gT);
+  if(Gs){ const ents=gV?Gs.ents.filter(e=>!e.vm||e.vm===+gV):Gs.ents;
+    detail+=`<div class="adet"><div class="adh">${icoHTML(Gs.ico,"sico")}${gV?VCH[gV]:""}<b>${esc(plain(Gs.title).replace(/\s*\(−[^)]*\)/,""))}</b></div>`;
+    if(ents.some(e=>e.wk&&!/^m:/.test(e._k))) detail+=wkSel();
+    detail+=optRows(ents,!!gV);
     detail+=`</div>`; }
   if(kiAllowed&&(AD.crown||AD.ki)){ detail+=`<div class="adet ki"><div class="adh">${icoHTML("crown","sico")}<b>Karta imperialna</b></div>`;
     if(!AD.ki) detail+=`<p class="ohint">Kliknij kartę imperialną w ręce na dole (podświetlone).</p>`;
@@ -1558,7 +1588,7 @@ function renderAD(){
       const O=kiOpts.find(O=>O.j===AD.kij); if(O){ if(O.ents.some(e=>e.wk&&!/^m:/.test(e._k))) detail+=wkSel(); detail+=optRows(O.ents); } }
     detail+=`</div>`; }
   MKON=new Set(MK.filter(e=>!e.lack.length).map(e=>e._k)); MKSEL=MK;
-  const info=groups.filter(G=>!avail(G)).map(G=>pickMsgs(G.body)).join("");
+  const info=groups.filter(G=>!avail(G)).map(G=>(G.body.match(/<p class="okmsg">[\s\S]*?<\/p>/g)||[]).join("")).join("");
   const myTurn=(phaseOf(g)==="act"||(phaseOf(g)==="dip"&&AD.dipEnd))&&g.turn===s;
   const iEnd=AH.length; AH.push(()=>{ closeAD(); if(myTurn) endTurn(); Cam.preset("main"); });
   const iX=AH.length; AH.push(()=>closeAD());
@@ -1774,7 +1804,7 @@ function renderPR(){
   if(keep){ const i=el.querySelector(`[data-adj="${keep}"],[data-upk="${keep}"]`); if(i){ i.focus(); const v=i.value; i.value=""; i.value=v; } }
   el.hidden=false;
 }
-function settleProduction(){ const {base,notes}=prodTx(); Act.commit(base.patch,base.before,"rozlicza fazę produkcji. "+notes.join(" · "));
+function settleProduction(){ const {base,notes}=prodTx(); Act.commit(base.patch,base.before,"Faza produkcji rozliczona. "+notes.join(" · "),"-");
   closePR(); UI.toast("Produkcja rozliczona. Szczegóły są w dzienniku."); }
 function prodTx(){
   const seats=seatsInPlay(S.g), base={patch:{players:{},pieces:{},cards:{}},before:{players:{},pieces:{},cards:{}}}, notes=[];
@@ -1846,7 +1876,7 @@ function applyFirstEvent(){ const g=S.g; if(!g.evB) return; const ev=curEventN()
   const cw=colWar(Object.keys(g.cards).filter(id=>{ const c=g.cards[id]; return c&&c.z==="table"&&/^col/.test(c.k)&&inRect(c,RC_RECT); })); if(cw.length){ txWar(tx(seatsInPlay(g)[0],t),cw.length); bn.push("kolonia z ikoną wojny: znacznik wojny +1"); }
   annAdd(t,"Wydarzenie",[`„${curEventName()}”`,`Dla wszystkich: ${(EVALL[ev]||{}).t||"brak"}.`,...bn,EVMOD[ev]?`W tej rundzie: ${EVMOD[ev].t}.`:"",colLine(S.g.col)].filter(Boolean),"Era I · runda 1",evIdNow());
   annAdd(t,"Dyplomacja",[],"Era I · runda 1");
-  Act.commit(t.patch,t.before,`wydarzenie „${curEventName()}” dla wszystkich: ${(EVALL[ev]||{}).t||"brak"}${bn.length?" ("+bn.join("; ")+")":""}.${EVMOD[ev]?` W tej rundzie: ${EVMOD[ev].t}.`:""} Faza: Dyplomacja.`); }
+  Act.commit(t.patch,t.before,`Wydarzenie „${curEventName()}” dla wszystkich: ${(EVALL[ev]||{}).t||"brak"}${bn.length?" ("+bn.join("; ")+")":""}.${EVMOD[ev]?` W tej rundzie: ${EVMOD[ev].t}.`:""} Faza: Dyplomacja.`,"-"); }
 /* początek rundy: wszystko robi gra */
 function startRound(){
   const g=S.g, r=roundOf(g)+1; if(r>7){ UI.toast("Gra jest już po ostatniej rundzie."); return; }
@@ -1878,12 +1908,12 @@ function startRound(){
   seats.forEach(s=>{ if(leadOf(s)===277&&(r===2||r===4)){ const tb=tx(s,t); tb.res(r===2?"s":"g",r===2?3:2); } });
   seats.forEach(s=>{ const pc=pactCol(s); if(g.players[s].colMod||pc) tx(s,t).pl("colMod",pc); const K=g.players[s].kiDisc; if(K&&(K.w||K.t)) tx(s,t).pl("kiDisc",{w:0,t:0}); });
   const evN=ev?g.cards[ev].n:null, bn=evN?applyEventAll(t,evN):[];
-  const msg=`rozpoczyna rundę ${r} (era ${ERA_PL[era]}): nowy rynek 12 kart, wydarzenie „${E?E[0]:"brak"}”, licytacja: ${E&&E[1]==="cf"?"kolonia i łaska cesarska":"2 kolonie"}${bid?", barbarzyńcy (tajna licytacja)":""}. Ambasadorzy wrócili.${upW.length?` Leżący robotnicy wstali (${upW.length}).`:""} Pierwszy gracz: ${seatName(seats[first])}.${seats.filter(s=>leadOf(s)===277&&(r===2||r===4)).map(s=>` Boudika (${seatName(s)}): ${r===2?"+3 kamienie":"+2 złota"}.`).join("")}${mw.length?` Na rynku ${mw.length===1?"jest 1 karta":`są ${mw.length} karty`} z ikoną wojny: znacznik wojny +${mw.length}.`:""}${cw.length?` Kolonia z ikoną wojny: znacznik wojny +${cw.length}.`:""}${evN&&EVALL[evN]?` Wydarzenie dla wszystkich: ${EVALL[evN].t}${bn.length?" ("+bn.join("; ")+")":""}.`:""}${evN&&EVMOD[evN]?` W tej rundzie: ${EVMOD[evN].t}.`:""} Faza: Dyplomacja.`;
+  const msg=`Początek rundy ${r} (era ${ERA_PL[era]}): nowy rynek 12 kart, wydarzenie „${E?E[0]:"brak"}”, licytacja: ${E&&E[1]==="cf"?"kolonia i łaska cesarska":"2 kolonie"}${bid?", barbarzyńcy (tajna licytacja)":""}. Ambasadorzy wrócili.${upW.length?` Leżący robotnicy wstali (${upW.length}).`:""} Pierwszy gracz: ${seatName(seats[first])}.${seats.filter(s=>leadOf(s)===277&&(r===2||r===4)).map(s=>` Boudika (${seatName(s)}): ${r===2?"+3 kamienie":"+2 złota"}.`).join("")}${mw.length?` Na rynku ${mw.length===1?"jest 1 karta":`są ${mw.length} karty`} z ikoną wojny: znacznik wojny +${mw.length}.`:""}${cw.length?` Kolonia z ikoną wojny: znacznik wojny +${cw.length}.`:""}${evN&&EVALL[evN]?` Wydarzenie dla wszystkich: ${EVALL[evN].t}${bn.length?" ("+bn.join("; ")+")":""}.`:""}${evN&&EVMOD[evN]?` W tej rundzie: ${EVMOD[evN].t}.`:""} Faza: Dyplomacja.`;
   { const sub=`Era ${ERA_PL[era]} · runda ${r}`;
     annAdd(t,"Wydarzenie",[`„${E?E[0]:"brak"}”`,evN&&EVALL[evN]?`Dla wszystkich: ${EVALL[evN].t}.`:"",...bn,evN&&EVMOD[evN]?`W tej rundzie: ${EVMOD[evN].t}.`:"",`Licytacja: ${E&&E[1]==="cf"?"kolonia i łaska cesarska":"2 kolonie"}.`,
       bid?"Barbarzyńcy! Za chwilę każdy gracz tajnie deklaruje, ile poświęca.":"",mw.length?`Na rynku ${mw.length} ${mw.length===1?"karta":"karty"} z ikoną wojny: znacznik wojny +${mw.length}.`:"",cw.length?`Kolonia z ikoną wojny: znacznik wojny +${cw.length}.`:"",`Pierwszy gracz: ${seatName(seats[first])}.`].filter(Boolean),sub,ev||null);
     annAdd(t,"Dyplomacja",[],sub); }
-  Act.commit(t.patch,t.before,msg);
+  Act.commit(t.patch,t.before,msg,"-");
 }
 
 /* ===== okna dialogowe (kolonizacja, barbarzyńcy) ===== */
@@ -2184,6 +2214,11 @@ function wonderStageDisc(s){ let d=0,src="";
   techsOf(s,"civ").forEach(T=>{ if(T.wd&&T.wd>d&&workersOn(s,T.rect).length){ d=T.wd; src=T.nm; } }); return {d,src}; }
 function freeDiscs(s,patch){ const cards=ownedCards(s).map(id=>cardRect(S.g.cards[id]));
   return Object.keys(S.g.pieces).filter(id=>{ const p=S.g.pieces[id]; return p&&p.k==="disc"&&p.s===s&&(!p.gone||p.dw)&&!(patch&&patch.pieces[id])&&(p.dw||!cards.some(R=>inR(p.x,p.y,R))); }); }
+/* zasada: w budowie najwyżej 1 cud – przy zakupie nowego niedokończony cud odpada z gry, krążki etapów wracają do puli */
+function dropUnfinishedWonders(t,s){ wondersOf(s).filter(W=>W.built<W.st.length).forEach(W=>{ const c=S.g.cards[W.id], R=cardRect(c);
+    Object.keys(S.g.pieces).forEach(id=>{ const p=S.g.pieces[id]; if(p&&p.k==="disc"&&p.s===s&&!p.gone&&inR(p.x,p.y,R)) t.piece(id,p.x,p.y,{gone:true,dw:1}); });
+    t.card(W.id,{z:"box"}); t.patch.players[s].wb={...(t.patch.players[s].wb||{}),[W.id]:null}; t.before.players[s].wb={...(t.before.players[s].wb||{}),[W.id]:W.built||null};
+    t.note(`niedokończony cud ${W.nm} odpada z gry`); }); }
 function buildStage(t,s,W){
   const c=S.g.cards[W.id], k=W.built, d=freeDiscs(s,t.patch)[0];
   if(d) t.piece(d,c.x+66,c.y-44+k*44,{gone:false,dw:null}); else t.note("brak wolnego krążka");
@@ -2350,7 +2385,7 @@ function showSummary(a,done){ const el=dlg("sumdlg","Podsumowanie fazy");
 const AUTO_PH=["prod","ev","war"];
 function goPhase(ph,lines){ const g=S.g, P=PHASES.find(p=>p[0]===ph); const t={patch:{phase:ph,...turnPatch(g,ph)},before:{phase:phaseOf(g),...turnBefore(g)}};
   if(!AUTO_PH.includes(ph)) annAdd(t,P[1],lines||(ph==="act"?[]:TURN_PHASES.includes(ph)?[`Zaczyna ${seatName(turnOrder(g)[0])}.`]:ph==="col"?[colLine(g.col)]:[]));
-  Act.commit(t.patch,t.before,`faza: ${P[1]}${TURN_PHASES.includes(ph)?`. Zaczyna ${seatName(turnOrder(g)[0])}`:""}`); }
+  Act.commit(t.patch,t.before,`Faza: ${P[1]}${TURN_PHASES.includes(ph)?`. Zaczyna ${seatName(turnOrder(g)[0])}`:""}`,"-"); }
 /* każdy krok wykonuje się najwyżej raz na rundę na tym komputerze i tylko na komputerze, który zrobił ostatni ruch */
 const AFD={};
 function afOnce(k){ const key=S.code+"|"+k; if(AFD[key]) return false; AFD[key]=1; return true; }
@@ -2525,7 +2560,7 @@ function manuAllDecided(){ const M=S.g.manu; return seatsInPlay(S.g).every(s=>(M
 function startManu(){ const g=S.g, r=roundOf(g), o=seatOrderFrom(g.first);
   const t={patch:{phase:"manu",...turnPatch(g,"manu"),manu:{r,turn:r===4?(o.find(s=>manuHand(s).length)||null):null,dec:allSeats(null),done:false}},before:{phase:phaseOf(g),...turnBefore(g),manu:g.manu?JSON.parse(JSON.stringify(g.manu)):null}};
   annAdd(t,"Tajne manuskrypty",r===4?["Po kolei każdy gracz decyduje: zagrywa 1 manuskrypt albo odrzuca 1 (zakryty).","Zagrane manuskrypty rozliczą się, gdy zdecydują wszyscy."]:["Wszystkie pozostałe manuskrypty zagrywają się same."]);
-  Act.commit(t.patch,t.before,`faza: Tajne manuskrypty (runda ${r})`); }
+  Act.commit(t.patch,t.before,`Faza: Tajne manuskrypty (runda ${r})`,"-"); }
 function manuDecide(id,k){ const g=S.g, M=g.manu, s=M.turn; if(!s) return; const o=seatOrderFrom(g.first);
   const left=o.filter(x=>x!==s&&!(M.dec||{})[x]&&manuHand(x).length), i=o.indexOf(s);
   const nx=o.slice(i+1).concat(o.slice(0,i)).find(x=>left.includes(x))||null;
@@ -2545,7 +2580,7 @@ function doManu(){ const g=S.g, r=roundOf(g), seats=seatsInPlay(g), n=seats.leng
   lines.push(`Punkty: ${manuPts(n).map((p,i)=>`${i+1}. miejsce ${p}`).join(", ")}; remisy jak zwykle.`);
   if(r===6) lines.push("To koniec rundy 6 – punktacja końcowa zostanie dodana do aplikacji.");
   annAdd(t,"Tajne manuskrypty – wynik",lines);
-  Act.commit(t.patch,t.before,"tajne manuskrypty: "+lines.join(" ")); }
+  Act.commit(t.patch,t.before,"Tajne manuskrypty: "+lines.join(" "),"-"); }
 const MD={open:false};
 function openManu(){ MD.open=true; renderMD(); }
 function renderMD(){ const el=dlg("manudlg","Tajne manuskrypty"); const g=S.g, M=g.manu;
@@ -2566,7 +2601,7 @@ function doProduction(){ const g=S.g; PR.adj={}; PR.upk={}; seatsInPlay(g).forEa
   const {base,notes}=prodTx(); base.patch.phase="ev"; base.before.phase="prod";
   seatsInPlay(g).forEach(s=>{ const tt=tx(s,base); if(tt.resNow("h")>=2) acadPend(tt,s); const ex=specList(s).filter(x=>x.k==="pex"); if(ex.length){ const pid=pendAdd(tt,s,"pex",1); tt.patch.pend[pid].ex=ex.map(x=>({id:x.id,nm:x.nm,a:x.a,b:x.b})); } });
   annAdd(base,"Produkcja",notes);
-  Act.commit(base.patch,base.before,"faza produkcji rozliczona automatycznie. "+notes.join(" · ")); }
+  Act.commit(base.patch,base.before,"Faza produkcji rozliczona automatycznie. "+notes.join(" · "),"-"); }
 /* wydarzenia porównawcze (część E): b = najlepszy, w = najgorszy; kategoria: poziom produkcji albo siła */
 const EVCMP={1:[["b","str",{carM:1}],["b","c",{res:{i:2}}]],3:[["b","i",{carM:1}],["b","c",{res:{s:2}}]],5:[["b","e",{vp:2}],["b","s",{res:{e:2}}]],
   7:[["b","g",{h:1}],["b","e",{imp:1}]],9:[["b","str",{pop:1}],["b","i",{vp:2}]],11:[["b","s",{upg:1}],["b","e",{vp:2}]],13:[["b","str",{dip:1}],["b","g",{res:{i:2}}]],
@@ -2605,7 +2640,7 @@ function doCompare(){ const g=S.g, C=EVCMP[curEventN()]||[], lines=[];
   if(C.length) lines.push("Remisy: produkcja wpływów, siła, produkcja energii, kultury, kamienia, złota.");
   annAdd(t,"Wydarzenia",[`„${curEventName()}”`,...lines],undefined,evIdNow());
   annAdd(t,"Kolonizacja",[colLine(g.col)]);
-  Act.commit(t.patch,t.before,"wydarzenia porównawcze: "+lines.join(" ")); }
+  Act.commit(t.patch,t.before,"Wydarzenia porównawcze: "+lines.join(" "),"-"); }
 /* status wojny: konflikt, gdy znacznik doszedł do pola 4 (także gdy przeszedł dalej na pole 1) */
 function doWar(){ const g=S.g, r=roundOf(g), seats=seatsInPlay(g), lines=[];
   const t={patch:{players:{},pieces:{},cards:{},warR:r},before:{players:{},pieces:{},cards:{},warR:g.warR===undefined?null:g.warR}};
@@ -2620,7 +2655,7 @@ function doWar(){ const g=S.g, r=roundOf(g), seats=seatsInPlay(g), lines=[];
     else lines.push(`Znacznik wojny przeszedł już dalej i zostaje na polu ${warOf()}.`); }
   else lines.push(`Znacznik wojny na polu ${warOf()} – nie ma konfliktu.`);
   annAdd(t,"Status wojny",lines);
-  Act.commit(t.patch,t.before,"status wojny: "+lines.join(" ")); }
+  Act.commit(t.patch,t.before,"Status wojny: "+lines.join(" "),"-"); }
 /* decyzje gracza z faz automatycznych: upgrade, nagroda za 1. miejsce w wojnie */
 const PD={shown:{}};
 function pendDone(id){ const p=(S.g.pend||{})[id]; if(p) Act.commit({pend:{[id]:null}},{pend:{[id]:p}},null); }
@@ -2669,7 +2704,7 @@ function turnEntries(g){ const log=g.log||{}; return Object.keys(log).filter(k=>
 /* w fazie akcji „Cofnij” cofa cały ruch gracza; w innych fazach – ostatni krok */
 function undoAny(){ if(phaseOf(S.g)==="act"){ if(turnEntries(S.g).length) undoTurn(); else UI.toast("W tym ruchu nie ma jeszcze nic do cofnięcia."); } else Act.undo(); }
 function undoTurn(){ const g=S.g; let k=0; while(turnEntries(S.g).length&&k<60){ Act.undo(); k++; }
-  closeAD(); UI.toast(k?`Cofnięto cały ruch (${k} ${k===1?"krok":k<5?"kroki":"kroków"}).`:"W tym ruchu nie ma jeszcze nic do cofnięcia."); }
+  closeAD(); UI.toast(k?"Cofnięto cały ruch.":"W tym ruchu nie ma jeszcze nic do cofnięcia."); }
 /* „Koniec ruchu” dopiero po wykonaniu ruchu w fazie akcji (pionek, gildia); samo czekanie nie wystarcza */
 function movedInTurn(g){ const log=g.log||{}; return turnEntries(g).some(k=>log[k]&&log[k].s===g.turn&&!/^pasuje/.test(log[k].m||"")); }
 function renderTurn(g){
@@ -2964,7 +2999,7 @@ const Table = {
       </header>
       <div id="viewport"><div id="world"></div></div>
       <aside id="side"><div id="players"></div>
-        <div id="logwrap"><div id="loghead"><h3>Dziennik</h3><button class="btn" id="undo2" title="Cofnij ostatni ruch (Ctrl+Z)">Cofnij ostatni ruch</button></div><ol id="log"></ol></div></aside>
+        <div id="logwrap"><div id="loghead"><h3>Dziennik</h3><button class="btn" id="undo2" title="Cofa cały ruch gracza w tej turze (Ctrl+Z)">Cofnij ruch</button></div><ol id="log"></ol></div></aside>
       <footer id="hand"><span class="hl">Twoja ręka</span><div id="handcards"></div></footer>
     </div>`;
     const W=document.getElementById("world");
