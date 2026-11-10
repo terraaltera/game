@@ -296,6 +296,7 @@ input[type=text]{background:#0f1317;border:1px solid var(--line);border-radius:6
 .gused span{font:700 30px system-ui;color:#ddd;text-shadow:0 2px 4px #000;transform:rotate(-20deg)}
 .gready{position:absolute;border:6px solid #e8c766;border-radius:16px;box-shadow:0 0 26px rgba(232,199,102,.6);animation:tgp 1.8s ease-in-out infinite}
 .genm.spu{width:34px;height:34px}
+.goalm{position:absolute;width:30px;height:30px;border-radius:4px;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.6)}
 .slotoff{position:absolute;width:54px;height:54px;border-radius:50%;background:rgba(20,20,20,.78);box-shadow:0 0 0 3px rgba(0,0,0,.5)}
 .slotoff::before,.slotoff::after{content:"";position:absolute;left:24px;top:8px;width:6px;height:38px;background:#c9c2b4;border-radius:3px;transform:rotate(45deg)}
 .slotoff::after{transform:rotate(-45deg)}
@@ -995,6 +996,8 @@ const Act = {
     const t=Date.now(); patch.log[t+"_"+S.me+"_u"]={t,s:S.me,m:`cofa ruch: „${e.m}”`,b:null};
     PK.open=false; { const pe=document.getElementById("pickdlg"); if(pe) pe.hidden=true; } if(typeof closeCF==="function") closeCF();
     Store.deepMerge(S.g,patch); Table.render(); Store.patch(S.code,patch);
+    /* cel publiczny cofa się razem z ruchem, który go spowodował */
+    if(/^osiąga cel publiczny/.test(e.m||"")) this.undo();
   }
 };
 
@@ -2203,7 +2206,7 @@ function goPhase(ph,lines){ const g=S.g, P=PHASES.find(p=>p[0]===ph); const t={p
 /* każdy krok wykonuje się najwyżej raz na rundę na tym komputerze i tylko na komputerze, który zrobił ostatni ruch */
 const AFD={};
 function afOnce(k){ const key=S.code+"|"+k; if(AFD[key]) return false; AFD[key]=1; return true; }
-function autoFlow(){ const g=S.g; if(!g||g.status!=="play"||!S.built) return; if(g.drv&&g.drv!==CID) return; if(genSync()) return; const ph=phaseOf(g), r=roundOf(g);
+function autoFlow(){ const g=S.g; if(!g||g.status!=="play"||!S.built) return; if(g.drv&&g.drv!==CID) return; if(genSync()) return; if(goalsSync()) return; const ph=phaseOf(g), r=roundOf(g);
   if(ph==="prod"){ if(afOnce("p"+r)) doProduction(); return; }
   if(ph==="ev"){ if(afOnce("e"+r)) doCompare(); return; }
   if(ph==="col"){ const st=g.col; if((!st||st.phase==="done"||(!st.c1&&!st.c2))&&afOnce("c"+r)) goPhase("war"); return; }
@@ -2264,6 +2267,25 @@ function genSync(){ const g=S.g; if(!g||!g.gens) return false; let t=null; const
   seatsInPlay(g).forEach(s=>{ const want=genActive(s).b, have=g.players[s].genStr||0; if(want===have) return;
     t=tx(s,t); txStr(t,s,want-have); t.pl("genStr",want); notes.push(`${seatName(s)}: siła generałów ${have} → ${want}`); });
   if(t){ t.go("Akademia Wojskowa: "+notes.join(", ")); return true; } return false; }
+/* ===== jawne cele publiczne (4 kafle obok Akademii) =====
+   kto spełni cel: znacznik w swoim kolorze + produkcja +1; punkty: 1. gracz 5, 2. gracz 3 (gra 2-osobowa: 1. gracz 3, 2. nic) */
+const GOALS=[{k:"won",nm:"zbudowanie 2 cudów",n:2,r:"i",cnt:s=>doneWonders(s).length},
+  {k:"pop",nm:"4 nowych robotników z toru populacji",n:4,r:"s",cnt:s=>{ let m=0; for(let j=0;j<8;j++){ const id=`${(j===3||j===6)?"gen":"wrk"}_${s}_p${j}`; if(S.g.pieces[id]&&movedFrom(id,origOf(s,PB.pop[j]))) m++; } return m; }},
+  {k:"tech",nm:"zakup 4 technologii",n:4,r:"e",cnt:s=>ownedCards(s).filter(id=>{ const c=S.g.cards[id]; const T=c&&/^era/.test(c.k)&&TECH[c.n]; return T&&T.t!=="w"; }).length},
+  {k:"terr",nm:"odkrycie 3 nowych terytoriów",n:3,r:"g",cnt:s=>discovered(s).filter(Boolean).length}];
+const GOAL_Y={won:457,pop:698,tech:940,terr:1182}, GOAL_X={green:2340,blue:2373,red:2406,yellow:2439};
+function goalPts(g,ord){ const n=seatsInPlay(g).length; if(n<=2) return ord===0?3:0; return ord===0?5:ord===1?3:0; }
+function goalsSync(){ const g=S.g; if(!g||g.status!=="play") return false; const G=g.goals||{};
+  for(const Q of GOALS){ const have=G[Q.k]||{}; const done=Object.keys(have).filter(s=>have[s]!==null&&have[s]!==undefined);
+    for(const s of seatsInPlay(g)){ if(done.includes(s)) continue; if(Q.cnt(s)<Q.n) continue;
+      const ord=done.length, pts=goalPts(g,ord), t=tx(s);
+      t.top("goals",{[Q.k]:{[s]:ord+1}},{[Q.k]:{[s]:null}}); txLevel(t,s,Q.r,1); if(pts) txVP(t,s,pts);
+      const lines=[`${seatName(s)} osiąga cel publiczny: ${Q.nm} (${ord+1}. gracz).`,
+        pts?`Punkty kultury: +${pts}.`:`Bez punktów kultury (punkty dostają tylko ${seatsInPlay(g).length<=2?"pierwszy gracz":"dwaj pierwsi gracze"}).`,
+        `Produkcja: ${PROD_NAME[Q.r]} +1.`];
+      annAdd(t,"Cel publiczny",lines);
+      t.go(`osiąga cel publiczny: ${Q.nm} (${ord+1}. gracz)${pts?` · +${pts} kultury`:""} · produkcja ${PROD_NAME[Q.r]} +1`); return true; } }
+  return false; }
 function openAcad(pid,p){ const el=dlg("acaddlg","Imperialna Akademia Wojskowa"), s=p.s, g=S.g, res=g.players[s].res||{}, opts=genOptions(s), c=milWorkers(s), act=genActive(s).act;
   const cell=k=>{ const G=GENS[k], o=(g.gens||{})[k], can=opts.includes(k); const full=Object.keys(G.req).every(r=>c[r]>=G.req[r]);
     return `<div class="gen ${o?"taken":""} ${can?"can":""}" ${o?`style="--c:${SEAT_COL[o]}"`:""}><b>+${G.b} siły</b><span>${genReqTxt(G)}</span>
@@ -2299,6 +2321,8 @@ function renderGens(){ const W=document.getElementById("world"); if(!W) return; 
   for(const id in S.g.cards){ const c=S.g.cards[id]; if(!c||c.z!=="table"||!GUILD[c.n]||!/^era/.test(c.k)||inMarket(c)) continue; const R=cardRect(c);
     if(c.gu) h+=`<div class="gused" style="left:${R[0]}px;top:${R[1]}px;width:${R[2]-R[0]}px;height:${R[3]-R[1]}px"><span>zużyta</span></div>`;
     else { const s=seatsInPlay(S.g).find(x=>ownedCards(x).includes(id)); if(s&&phaseOf(S.g)==="act"&&S.g.turn===s&&c.gb!==S.g.turnT&&(S.g.guildT||{})[s]!==S.g.turnT) h+=`<div class="gready" style="left:${R[0]-6}px;top:${R[1]-6}px;width:${R[2]-R[0]+12}px;height:${R[3]-R[1]+12}px"></div>`; } }
+  { const GL=S.g.goals||{}; for(const k in GL){ const m=GL[k]||{}; for(const s in m){ if(!m[s]||!GOAL_X[s]) continue;
+    h+=`<div class="goalm" style="left:${GOAL_X[s]-15}px;top:${GOAL_Y[k]-15}px;background:${SEAT_COL[s]}" title="${esc(seatName(s))}: cel publiczny (${m[s]}. gracz)"></div>`; } } }
   const U=S.g.spUsed||{}; for(const id in U){ const s=U[id], c=S.g.cards[id]; if(!s||!c||c.z!=="table") continue; const R=cardRect(c);
     const k=c.sc||1; h+=`<div class="genm spu" style="left:${c.x+14*k-14}px;top:${c.y+61*k-14}px;background:${SEAT_COL[s]}" title="Właściwość karty wykorzystana"></div>`; }
   if(c.innerHTML!==h) c.innerHTML=h; }
