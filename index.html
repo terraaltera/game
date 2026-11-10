@@ -1237,13 +1237,22 @@ function freeHint(s,o){ const f=freeWorkers(s), done=o&&o.key&&AD.used[o.key];
   if(done) return `<p class="okmsg">✓ Robotnik wysłany.</p>`;
   if(!KIOV) AD.needW=true;
   return f.length||AD.src? "" : `<p class="awarn">Brak wolnego robotnika – kliknij robotnika stojącego na planszy, żeby go przenieść.</p>`; }
+/* wykonuje upgrade robotnika (przesunięcie z niższego poziomu na wyższy) w jednej transakcji */
+function applyUpgrade(t,s,u){ t.res("s",-u.cost); const n=workersOn(s,u.hi.rect).length;
+  t.piece(u.w,...terrSpot(s,u.hi.terr.c,u.hi.terr.row,n));
+  for(const k in u.dp){ if(k==="str") txStr(t,s,u.dp[k]); else txLevel(t,s,k,u.dp[k]); }
+  const up={g:0,i:0,...(S.g.players[s].upk||{})}; let ch=false; ["g","i"].forEach(k=>{ const d=((u.hi.up||{})[k]||0)-((u.lo.up||{})[k]||0); if(d){ up[k]+=d; ch=true; } }); if(ch) t.pl("upk",up);
+  t.note(`upgrade robotnika z ${terrNm(u.lo.terr.c,u.lo.terr.row)} na ${terrNm(u.hi.terr.c,u.hi.terr.row)}`); return t; }
 function secSendTerr(mode,o={}){
   const s=AD.seat, d=discovered(s), K=kd(s,["tr","as"]), ed=evDisc("terr")+K.n; const rows=[];
   const noW=!freeWorkers(s).length&&!AD.src, modes=mode?[1,2]:[0];
   ["szare","niebieskie"].forEach(c=>{ for(let row=1;row<=4;row++){ const j=TERR.findIndex(t=>t.c===c&&t.row===row); if(row<4&&!d[j]) continue;
     const base=TERR_WORK[c][row-1], pr=TERR_PROD[c][row-1], rk=c==="szare"?"s":"e", nOn=workersOn(s,terrRect(s,c,row)).length;
     modes.forEach(m=>rows.push(opt(terrNm(c,row),discDelta(base,m,ed),tt=>{ kc(tt,s,K.k); sendWorker(tt,s,{kind:"terr",c,row,p:{[rk]:pr}}); },
-      {...o,spk:"tr",dis:o.dis||noW,vl:m?VLAB[m]:"",wk:true,tg:{k:`t:${c}:${row}`,r:terrRect(s,c,row),nm:"Robotnik na terytorium: "+terrNm(c,row)},log:`wysyła robotnika na terytorium (${terrNm(c,row).toLowerCase()})`,gain:`Produkcja ${TERR_RES[c]} +${pr} · robotników na polu: ${nOn}`}))); } });
+      {...o,spk:"tr",dis:o.dis||noW,vl:m?VLAB[m]:"",wk:true,tg:{k:`t:${c}:${row}`,r:terrRect(s,c,row),nm:"Robotnik na terytorium: "+terrNm(c,row)},log:`wysyła robotnika na terytorium (${terrNm(c,row).toLowerCase()})`,gain:`Produkcja ${TERR_RES[c]} +${pr} · robotników na polu: ${nOn}`})));
+    /* upgrade z niższego poziomu tej samej kolumny – w tym samym oknie obok budowy nowego robotnika */
+    if(!mode) upgradesOf(s).filter(u=>u.hi.terr&&u.hi.terr.c===c&&u.hi.terr.row===row).forEach(u=>rows.push(opt(`Upgrade z ${terrNm(u.lo.terr.c,u.lo.terr.row)} → ${terrNm(c,row)}`,{s:-u.cost},tt=>applyUpgrade(tt,s,u),
+      {...o,spk:"tr",dis:o.dis||(u.cost>((S.g.players[s].res||{}).s||0)),tg:{k:`t:${c}:${row}`,r:terrRect(s,c,row),nm:"Upgrade robotnika: "+terrNm(c,row)},log:`upgrade robotnika (${terrNm(u.lo.terr.c,u.lo.terr.row).toLowerCase()} → ${terrNm(c,row).toLowerCase()})`,gain:`Robotnik przechodzi z niższego poziomu · ${Object.keys(u.dp).length?prodText(u.dp):"bez zmiany produkcji"}`}))); } });
   return sec("Wyślij robotnika na terytorium",freeHint(s,o)+rows.join(""));
 }
 /* wysyłanie robotnika na technologię z listy kart gracza; kind: "civ" | "mil" */
