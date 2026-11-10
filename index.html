@@ -1866,7 +1866,8 @@ function applyReward(t,seat,R){ if(!R) return t;
 /* chwała: 8 żetonów na torze; 1–4 darmowe, 5–6 +1 wpływ, 7–8 +1 energia; po wyczerpaniu tor się uzupełnia */
 const gloryCost=j=> j<4?{} : j<6?{i:-1}:{e:-1};
 function takeGlory(t,seat){ const j=("glory" in t.patch)?t.patch.glory:(S.g.glory||0); const c=gloryCost(j);
-  for(const k in c) t.res(k,c[k]); t.res("h",1); if(t.resNow("h")>=2&&typeof acadPend==="function") acadPend(t,seat);
+  /* koszt żetonu (wpływ/energia): gdy brakuje – płaci, ile ma, a za brakujące −3 kultury (zasada braku zasobów) */
+  for(const k in c){ const have=t.resNow(k); if(have+c[k]<0){ const miss=-(have+c[k]); t.res(k,-have); txVP(t,seat,-3*miss); t.note(`brak ${miss} ${RES_INFO[k][0]} na żeton chwały: −${3*miss} kultury`); } else t.res(k,c[k]); } t.res("h",1); if(t.resNow("h")>=2&&typeof acadPend==="function") acadPend(t,seat);
   if(!("glory" in t.before)) t.before.glory=S.g.glory||0; t.patch.glory=(j+1)>=8?0:j+1;
   t.notes=(t.notes||[]).concat(`chwała z toru (żeton ${j+1}${c.i?", −1 wpływ":c.e?", −1 energia":""}${j+1>=8?"; tor chwały uzupełniony":""})`); return t; }
 function takeGloryNow(seat){ const t=tx(seat); takeGlory(t,seat); t.go("bierze chwałę"); }
@@ -1942,6 +1943,9 @@ function payInputs(prefix,total,seat){ const res=S.g.players[seat].res||{}, cm=M
     <p class="an">Suma musi wynosić ${total}. Modyfikatory to kotwice z kart imperialnych zagranych w dyplomacji, z paktów oraz zaznaczone właściwości kart.</p>`; }
 function spcUsed(prefix,seat){ const el=document.getElementById("coldlg"); if(!el) return; const L=[...el.querySelectorAll(`[data-spc^="${prefix}|"]:checked`)].map(b=>b.dataset.spc.split("|")[1]);
   if(L.length) Act.commit({spUsed:Object.fromEntries(L.map(id=>[id,seat]))},{spUsed:Object.fromEntries(L.map(id=>[id,null]))},`używa właściwości kart do kolonizacji: ${L.map(id=>TECH[S.g.cards[id].n].nm).join(", ")}`,seat); }
+/* płatność w kolonizacji nie może przekroczyć zasobów gracza (wpływy, złoto, chwała) ani jego modyfikatorów */
+function payOK(seat,p){ const r=S.g.players[seat].res||{}, cm=S.g.players[seat].colMod||0; const bad=[]; if(p.i>(r.i||0)) bad.push("wpływów"); if(p.g>(r.g||0)) bad.push("złota"); if(p.h>(r.h||0)) bad.push("chwały"); if(p.m>cm) bad.push("modyfikatorów kolonizacji");
+  if(bad.length){ UI.toast(`Nie masz tyle ${bad.join(", ")}. Zmień płatność albo zrezygnuj.`); return false; } return true; }
 function readPay(prefix){ const v=k=>Math.max(0,parseInt((document.getElementById(prefix+k)||{}).value,10)||0); return {i:v("i"),g:v("g"),h:v("h"),m:v("m")}; }
 
 const CD={open:false};
@@ -2007,14 +2011,14 @@ function renderCD(){
   el.innerHTML=`<header><div><h3>Kolonizacja</h3><p class="an">Runda ${roundOf(g)}</p></div><button class="btn" id="cClose">Zamknij</button></header>${body}`;
   el.hidden=false;
   const q=s=>el.querySelector(s);
-  q("#cClose").onclick=()=>{ CD.open=false; el.hidden=true; };
+  q("#cClose").onclick=()=>{ CD.open=false; CD.shut=roundOf(S.g); el.hidden=true; };
   if(q("#cBidB")) q("#cBidB").onclick=()=>colBid(parseInt(q("#cBid").value,10)||0);
   if(q("#cPass")) q("#cPass").onclick=()=>colPass();
   if(q("#cFav")) q("#cFav").onclick=()=>colFav();
   if(q("#cDecl")) q("#cDecl").onclick=()=>colDecline();
   el.querySelectorAll("[data-spc]").forEach(b=>b.onchange=()=>{ const [pf,,n]=b.dataset.spc.split("|"); const inp=document.getElementById(pf+"m"); if(inp) inp.value=Math.max(0,(parseInt(inp.value,10)||0)+(b.checked?1:-1)*(+n)); });
-  el.querySelectorAll("[data-take]").forEach(b=>b.onclick=()=>{ const p=readPay("cp"); if(p.i+p.g+p.h+p.m===st.high) spcUsed("cp",st.win); if(p.i+p.g+p.h+p.m!==st.high){ UI.toast(`Suma płatności musi wynosić ${st.high}.`); return; } colTake(+b.dataset.take,st.high,p); });
-  el.querySelectorAll("[data-take2]").forEach(b=>b.onclick=()=>{ const amt=st.last[st.second]; const p=readPay("cs"); if(p.i+p.g+p.h+p.m===amt) spcUsed("cs",st.second); if(p.i+p.g+p.h+p.m!==amt){ UI.toast(`Suma płatności musi wynosić ${amt}.`); return; } colTake(+b.dataset.take2,amt,p); });
+  el.querySelectorAll("[data-take]").forEach(b=>b.onclick=()=>{ const p=readPay("cp"); if(p.i+p.g+p.h+p.m===st.high) spcUsed("cp",st.win); if(p.i+p.g+p.h+p.m!==st.high){ UI.toast(`Suma płatności musi wynosić ${st.high}.`); return; } if(!payOK(st.win,p)) return; colTake(+b.dataset.take,st.high,p); });
+  el.querySelectorAll("[data-take2]").forEach(b=>b.onclick=()=>{ const amt=st.last[st.second]; const p=readPay("cs"); if(p.i+p.g+p.h+p.m===amt) spcUsed("cs",st.second); if(p.i+p.g+p.h+p.m!==amt){ UI.toast(`Suma płatności musi wynosić ${amt}.`); return; } if(!payOK(st.second,p)) return; colTake(+b.dataset.take2,amt,p); });
   el.querySelectorAll("[data-pv]").forEach(i=>{ const [k,n]=i.dataset.pv.split("|"); i.onmouseenter=()=>UI.preview(faceSrc(k,n)); i.onmouseleave=()=>UI.preview(null); });
 }
 
@@ -2081,7 +2085,7 @@ function renderBD(){
   }
   el.innerHTML=`<header><div><h3>Barbarzyńcy</h3><p class="an">Runda ${roundOf(g)}</p></div><button class="btn" id="bClose">Zamknij</button></header>${body}`;
   el.hidden=false;
-  el.querySelector("#bClose").onclick=()=>{ BD.open=false; el.hidden=true; };
+  el.querySelector("#bClose").onclick=()=>{ BD.open=false; BD.shut=roundOf(S.g); el.hidden=true; };
   const b=el.querySelector("#bGo"); if(b) b.onclick=()=>barbSubmit(parseInt(el.querySelector("#bVal").value,10)||0);
   el.querySelectorAll("[data-pv]").forEach(i=>{ const [k,n]=i.dataset.pv.split("|"); i.onmouseenter=()=>UI.preview(faceSrc(k,n)); i.onmouseleave=()=>UI.preview(null); });
 }
@@ -3188,13 +3192,13 @@ const Table = {
     annCheck(); pendCheck(); renderRez(); renderGens(); renderMkBar();
     /* bonus z wydarzenia: okno otwiera się samo w 1. turze gracza (tylko gdy ma wolnego robotnika) */
     { const s=g.turn, pl=s&&g.players[s], key=roundOf(g)+"|"+s; if(phaseOf(g)==="act"&&s&&s===S.me&&pl&&pl.evSend&&!AD.open&&!annBusy()&&Table._evs!==key&&freeWorkers(s).length&&techsOf(s,"civ").length){ Table._evs=key; openField("evc",s,null); } }
-    if(g.barb&&g.barb.id&&!g.barb.done&&!BD.open&&BD.auto!==roundOf(g)&&!annBusy()){ BD.auto=roundOf(g); openBarb(); }
+    if(g.barb&&g.barb.id&&!g.barb.done&&!BD.open&&BD.shut!==roundOf(g)&&!annBusy()){ openBarb(); }
     { const nb=document.getElementById("rNext"); if(nb) nb.hidden=true; }
     if(phaseOf(g)==="manu"&&g.manu&&!g.manu.done&&g.manu.r===4&&!annBusy()){ if(!MD.open&&MD.closedFor!==g.manu.turn) openManu(); else if(MD.open) renderMD(); }
     else if(MD.open) renderMD();
     if(BD.open&&g.barb&&g.barb.done){ BD.open=false; const be=document.getElementById("barbdlg"); if(be) be.hidden=true; UI.preview(null); }
     if(CD.open&&g.col&&(g.col.phase==="done"||phaseOf(g)!=="col")){ CD.open=false; const ce=document.getElementById("coldlg"); if(ce) ce.hidden=true; UI.preview(null); }
-    if(phaseOf(g)==="col"&&g.col&&g.col.phase!=="done"&&(g.col.c1||g.col.c2)&&!CD.open&&CD.auto!==roundOf(g)&&!annBusy()){ CD.auto=roundOf(g); openCol(); }
+    if(phaseOf(g)==="col"&&g.col&&g.col.phase!=="done"&&(g.col.c1||g.col.c2)&&!CD.open&&CD.shut!==roundOf(g)&&!annBusy()&&!(g.barb&&g.barb.id&&!g.barb.done)){ openCol(); }
     this.renderSide(); this.renderHand(); if(AD.open) renderAD(); const typing=id=>{ const a=document.activeElement; const el=document.getElementById(id); return !!(a&&el&&el.contains(a)&&a.tagName==="INPUT"); };
     if(PR.open&&!typing("prod")) renderPR(); if(CD.open&&!typing("coldlg")) renderCD(); if(BD.open&&!typing("barbdlg")) renderBD();
     const sel=document.getElementById("seatSel"); if(sel){ [...sel.options].forEach(o=>{ if(o.value==="auto") return; const t=`${SEAT_PL[o.value]} – ${seatName(o.value)}`; if(o.textContent!==t) o.textContent=t; }); const want=S.auto?"auto":S.me; if(sel.value!==want) sel.value=want; }
