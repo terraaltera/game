@@ -300,6 +300,8 @@ input[type=text]{background:#0f1317;border:1px solid var(--line);border-radius:6
 .rk.h{border-color:#666}
 .aico{width:30px;height:30px;vertical-align:middle;margin-right:6px;flex:none}
 .aico.sm{width:22px;height:22px;margin-right:2px}
+.cfh{display:flex;align-items:center;gap:12px}
+.hico{width:52px;height:52px;flex:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
 .ao .al{display:inline-flex;align-items:center;gap:2px}
 .goalm{position:absolute;width:30px;height:30px;border-radius:4px;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.6)}
 .slotoff{position:absolute;width:54px;height:54px;border-radius:50%;background:rgba(20,20,20,.78);box-shadow:0 0 0 3px rgba(0,0,0,.5)}
@@ -1116,7 +1118,7 @@ const RKC={g:["złoto","#e0b230"],s:["kamień","#8e959b"],e:["energia","#2f73d6"
 const RK=(r,txt)=>{ const I=RKC[r]||[r,"#666"]; return `<span class="rk${r==="h"?" h":""}" style="--c:${I[1]}" title="${I[0]}">${txt}${r==="h"?"★":""}</span>`; };
 const AICO={wrk:s=>`<svg class="aico" viewBox="0 0 100 100" aria-hidden="true"><path d="${MEEPLE}" fill="${SEAT_COL[s]||"#888"}" stroke="#111" stroke-width="5"/></svg>`,
   upg:`<svg class="aico" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="#e0731c" stroke="#7a3508" stroke-width="2.5"/><path d="M20 7 L30 19 H23.5 V32 H16.5 V19 H10 Z" fill="#fde9c2" stroke="#7a3508" stroke-width="1.6" stroke-linejoin="round"/></svg>`,
-  disc:`<img class="aico" src="${asset("ico/bino.png")}" alt="">`, gear:`<img class="aico sm" src="${asset("ico/gear.png")}" alt="produkcja">`};
+  disc:`<img class="aico" src="${asset("ico/disc.png")}" alt="">`, gear:`<img class="aico sm" src="${asset("ico/gear.png")}" alt="produkcja">`};
 function costHTML(d){ const parts=Object.keys(d).filter(k=>d[k]).map(k=>RK(k,(d[k]>0?"+":"−")+Math.abs(d[k])));
   return parts.length? parts.join("") : `<span class="chip free">bez kosztu</span>`; }
 
@@ -1171,7 +1173,7 @@ function secDiscover(disc,o={}){
   return sec(`Odkryj terytorium${disc?` (−${disc} złota)`:""}`, evNote(ed?`odkrycie o ${ed} złoto taniej`:"")+kiNote(K,"zł")+list.map(({t,j})=>opt(terrNm(t.c,t.row),{g:-Math.max(0,t.disc-disc-ed-K.n)},
     tt=>{ kc(tt,s,K.k); tt.piece(`tri_${s}_${j}`,...traySpot(s));
       if(leadOf(s)===275){ txCaravan(tt,s,1); const nd=discovered(s).filter(Boolean).length+1; if(nd%2===0){ txStr(tt,s,1); tt.note("Attyla: +1 siły za 2 odkryte terytoria"); } } const tb=tribeBonus(tt,s,j); if(tb){ tt.note(`pod plemieniem: ${TRIBE_TXT[tb]}`); UI.toast(`Pod plemieniem było: ${TRIBE_TXT[tb]}`); } if(t.row===1){ txLevel(tt,s,"c",1); tt.upg=(tt.upg||0)+1; tt.upgT={terr:{c:t.c,row:t.row}}; } if(t.row===2&&t.c==="niebieskie") txLevel(tt,s,"car",1); if(t.row===2&&t.c==="szare") txStr(tt,s,2); },
-    {...o,vl:"Odkryj",ico:AICO.disc,tg:{k:`d:${t.c}:${t.row}`,r:terrRect(s,t.c,t.row),nm:"Odkryj terytorium: "+terrNm(t.c,t.row)},log:`odkrywa terytorium (${terrNm(t.c,t.row).toLowerCase()}) i bierze plemię`,gain:`Bonus terytorium: ${t.bonus}. Pod plemieniem czeka losowy bonus (kamień, energia, wpływ, złoto, karawana albo karta imperialna). Plemię trafia do zapasu.`})).join(""));
+    {...o,vl:"Odkryj",ico:AICO.disc,tg:{ai:"disc",k:`d:${t.c}:${t.row}`,r:terrRect(s,t.c,t.row),nm:"Odkryj terytorium: "+terrNm(t.c,t.row)},log:`odkrywa terytorium (${terrNm(t.c,t.row).toLowerCase()}) i bierze plemię`,gain:`Bonus terytorium: ${t.bonus}. Pod plemieniem czeka losowy bonus (kamień, energia, wpływ, złoto, karawana albo karta imperialna). Plemię trafia do zapasu.`})).join(""));
 }
 function secPop(disc,o={}){
   const s=AD.seat, n=nextPop(s), ed=evDisc("pop");
@@ -1180,7 +1182,7 @@ function secPop(disc,o={}){
   const cost=o.free?0:Math.max(0,POP_COST[n.j]-disc-ed-K.n-ram), gen=(n.j===3||n.j===6);
   return sec(`Zwiększ populację${disc?` (−${disc} energii)`:""}`, evNote(ed?`populacja o ${ed} energię taniej`:"")+kiNote(K,"energii")+(ram?`<p class="evn">Lider Ramzes II: populacja o 1 energię taniej (raz na rundę).</p>`:"")+opt(`Weź ${gen?"geniusza":"robotnika"} z ${n.j+1}. miejsca`,{e:-cost},
     tt=>{ kc(tt,s,K.k); tt.piece(n.id,...zoneSupplySpot(seatIdx(s))); if(n.j===6) txStr(tt,s,2);
-      if(ram){ tt.pl("ramR",roundOf(S.g)); tt.note("Ramzes II: populacja o 1 energię taniej"); } if(leadOf(s)===269){ tt.res("i",1); tt.note("Kleopatra: +1 wpływ za populację"); } },{...o,tg:{k:"pop",r:rectAround(origOf(s,PB.pop[n.j]),62),nm:`Zwiększ populację (${n.j+1}. miejsce${gen?", geniusz":""})`},log:`zwiększa populację (${n.j+1}. miejsce${gen?", geniusz":""})`,
+      if(ram){ tt.pl("ramR",roundOf(S.g)); tt.note("Ramzes II: populacja o 1 energię taniej"); } if(leadOf(s)===269){ tt.res("i",1); tt.note("Kleopatra: +1 wpływ za populację"); } },{...o,tg:{ai:"pop",k:"pop",r:rectAround(origOf(s,PB.pop[n.j]),62),nm:`Zwiększ populację (${n.j+1}. miejsce${gen?", geniusz":""})`},log:`zwiększa populację (${n.j+1}. miejsce${gen?", geniusz":""})`,
       gain:`Nowe wyżywienie: ${POP_FEED[n.j]} energii na rundę${n.j===6?", oraz +2 siły":""}. Robotnik trafia do zapasu na planszy gracza.`}));
 }
 /* zakup karty z rynku; what: "tech" | "wonder" | "all" – karty podświetlają się na pasku rynku */
@@ -1201,7 +1203,7 @@ function secBuy(title,disc,o={}){
     const bp=payPlan(s,{g:-price}), lack=bp.ok?[]:["g"];
     const gain=[T.t==="w"?`Cud: ${T.st?T.st.length:"?"} ${T.st&&T.st.length<5?"etapy":"etapów"} budowy, po ukończeniu: ${T.end||prodText(T.p)}`:(T.p?`Za robotnika: ${prodText(T.p)} (koszt robotnika: ${T.cost||0} kam.)`:""),
       m.row===0?"karta imperialna do ręki":"", T.b==="h"?"bonus: chwała":"", T.b==="u"?"bonus: upgrade robotnika":"", e2?`wydarzenie: −${e2} zł`:"", disc?`pole: −${disc} zł`:""].filter(Boolean).join(" · ");
-    h+=regT({k:"m:"+m.id,nm:T.nm||DECK_ONE[m.c.k],img:faceSrc(m.c.k,m.c.n)},{label:KIOV?kiLab():`${title}: ${m.price} zł na rynku`,delta:bp.d,joker:bp.joker?bp.jtxt:"",run,lack,gain,pre:KIOV?KIOV.j:undefined,kt:KIOV?KIOV.txt:""}); });
+    h+=regT({ai:T.t==="w"?"won":"tech",k:"m:"+m.id,nm:T.nm||DECK_ONE[m.c.k],img:faceSrc(m.c.k,m.c.n)},{label:KIOV?kiLab():`${title}: ${m.price} zł na rynku`,delta:bp.d,joker:bp.joker?bp.jtxt:"",run,lack,gain,pre:KIOV?KIOV.j:undefined,kt:KIOV?KIOV.txt:""}); });
   return sec(title+(disc?` (−${disc} złota)`:""),h);
 }
 const inMarket=c=>c&&c.z==="table"&&c.x>MARKET.x&&c.x<MARKET.x+MARKET.w&&c.y>MARKET.y&&c.y<MARKET.y+MARKET.h;
@@ -1265,10 +1267,10 @@ function secSendTerr(mode,o={}){
   ["szare","niebieskie"].forEach(c=>{ for(let row=1;row<=4;row++){ const j=TERR.findIndex(t=>t.c===c&&t.row===row); if(row<4&&!d[j]) continue;
     const base=TERR_WORK[c][row-1], pr=TERR_PROD[c][row-1], rk=c==="szare"?"s":"e", nOn=workersOn(s,terrRect(s,c,row)).length;
     modes.forEach(m=>rows.push(opt(terrNm(c,row),discDelta(base,m,ed),tt=>{ kc(tt,s,K.k); sendWorker(tt,s,{kind:"terr",c,row,p:{[rk]:pr}}); },
-      {...o,spk:"tr",dis:o.dis||noW,vl:m?"Nowy robotnik · "+VLAB[m]:"Nowy robotnik",ico:AICO.wrk(s),wk:true,tg:{k:`t:${c}:${row}`,r:terrRect(s,c,row),nm:terrNm(c,row)},log:`wysyła robotnika na terytorium (${terrNm(c,row).toLowerCase()})`,gain:`${AICO.gear}${RK(rk,"+"+pr)} &nbsp; <span title="robotników na polu">${AICO.wrk(s).replace('class="aico"','class="aico sm"')}×${nOn}</span>`})));
+      {...o,spk:"tr",dis:o.dis||noW,vl:m?"Nowy robotnik · "+VLAB[m]:"Nowy robotnik",ico:AICO.wrk(s),wk:true,tg:{ai:"axe",k:`t:${c}:${row}`,r:terrRect(s,c,row),nm:terrNm(c,row)},log:`wysyła robotnika na terytorium (${terrNm(c,row).toLowerCase()})`,gain:`${AICO.gear}${RK(rk,"+"+pr)} &nbsp; <span title="robotników na polu">${AICO.wrk(s).replace('class="aico"','class="aico sm"')}×${nOn}</span>`})));
     /* upgrade z niższego poziomu tej samej kolumny – w tym samym oknie obok budowy nowego robotnika */
     upgradesOf(s).filter(u=>u.hi.terr&&u.hi.terr.c===c&&u.hi.terr.row===row).forEach(u=>rows.push(opt(`Upgrade z ${terrNm(u.lo.terr.c,u.lo.terr.row)} → ${terrNm(c,row)}`,{s:-u.cost},tt=>applyUpgrade(tt,s,u),
-      {...o,spk:"tr",dis:o.dis||(u.cost>((S.g.players[s].res||{}).s||0)),vl:`Upgrade z poziomu ${4-u.lo.terr.row}`,ico:AICO.upg,tg:{k:`t:${c}:${row}`,r:terrRect(s,c,row),nm:terrNm(c,row)},log:`upgrade robotnika (${terrNm(u.lo.terr.c,u.lo.terr.row).toLowerCase()} → ${terrNm(c,row).toLowerCase()})`,gain:`${AICO.gear}${Object.keys(u.dp).filter(k=>u.dp[k]).map(k=>RK(k,(u.dp[k]>0?"+":"")+u.dp[k])).join("")||"bez zmiany produkcji"}`}))); } });
+      {...o,spk:"tr",dis:o.dis||(u.cost>((S.g.players[s].res||{}).s||0)),vl:`Upgrade z poziomu ${4-u.lo.terr.row}`,ico:AICO.upg,tg:{ai:"axe",k:`t:${c}:${row}`,r:terrRect(s,c,row),nm:terrNm(c,row)},log:`upgrade robotnika (${terrNm(u.lo.terr.c,u.lo.terr.row).toLowerCase()} → ${terrNm(c,row).toLowerCase()})`,gain:`${AICO.gear}${Object.keys(u.dp).filter(k=>u.dp[k]).map(k=>RK(k,(u.dp[k]>0?"+":"")+u.dp[k])).join("")||"bez zmiany produkcji"}`}))); } });
   return sec("Wyślij robotnika na terytorium",freeHint(s,o)+rows.join(""));
 }
 /* wysyłanie robotnika na technologię z listy kart gracza; kind: "civ" | "mil" */
@@ -1279,7 +1281,7 @@ function secTech(kind,mode,o={}){
   const noW=!freeWorkers(s).length&&!AD.src, modes=(mode===2||o.variants)?[1,2]:[mode];
   const rows=[]; list.forEach(T=>{ const nOn=workersOn(s,T.rect).length, c=S.g.cards[T.id];
     modes.forEach(m=>rows.push(opt(`${T.nm}`,discDelta(T.cost,m,ed),tt=>{ kc(tt,s,K.k); sendWorker(tt,s,{kind:"tech",T}); if(o.onT) o.onT(tt); },{...o,spk:kind==="civ"?"c":"m",dis:o.dis||noW,vl:modes.length>1?VLAB[m]:"",wk:true,
-      tg:{k:"c:"+T.id,r:T.rect,nm:(kind==="civ"?"Robotnik na: ":"Wojownik na: ")+T.nm,img:c?faceSrc(c.k,c.n):null},log:`wysyła robotnika na ${T.nm}${o.extra?" (bonus z wydarzenia)":""}`,
+      tg:{ai:kind==="civ"?"civ":"mil",k:"c:"+T.id,r:T.rect,nm:(kind==="civ"?"Robotnik na: ":"Wojownik na: ")+T.nm,img:c?faceSrc(c.k,c.n):null},log:`wysyła robotnika na ${T.nm}${o.extra?" (bonus z wydarzenia)":""}`,
       gain:`${prodText(T.p)} za robotnika · koszt z karty: ${T.cost} · robotników na karcie: ${nOn}${T.up?` · utrzymanie: −${Object.keys(T.up).map(k=>T.up[k]+" "+RES_INFO[k][0]).join(", ")} na rundę`:""}`}))); });
   return sec(title,freeHint(s,o)+rows.join(""));
 }
@@ -1289,7 +1291,7 @@ function secWonder(mode,o={}){
   const K=kd(s,["ws","as"]), modes=(mode===2||o.variants)?[1,2]:[mode]; const rows=[];
   list.forEach(W=>{ const cost=W.st[W.built]; const ext={d:0,src:""}, c=S.g.cards[W.id];
     modes.forEach(m=>rows.push(opt(`${W.nm}: etap ${W.built+1} z ${W.st.length}`,discDelta(cost,m,ext.d+K.n),tt=>{ kc(tt,s,K.k); buildStage(tt,s,W,ext); },{...o,spk:"ws",vl:modes.length>1?VLAB[m]:"",
-      tg:{k:"w:"+W.id,r:cardRect(c),nm:`${W.nm}: etap ${W.built+1} z ${W.st.length}`,img:faceSrc(c.k,c.n)},log:`buduje etap ${W.built+1} cudu ${W.nm}`,
+      tg:{ai:"won",k:"w:"+W.id,r:cardRect(c),nm:`${W.nm}: etap ${W.built+1} z ${W.st.length}`,img:faceSrc(c.k,c.n)},log:`buduje etap ${W.built+1} cudu ${W.nm}`,
       gain:`Koszt etapu: ${cost}${ext.d?` (−${ext.d}: ${ext.src})`:""}. ${W.built+1===W.st.length?`Ostatni etap: ${W.end?W.end:prodText(W.p)}.`:"Cud działa po zbudowaniu wszystkich etapów."}`}))); });
   return sec("Zbuduj etap cudu",rows.join(""));
 }
@@ -1302,7 +1304,7 @@ function secFort(cost,o={}){
   const builtNow=turnEntries(S.g).some(k=>{ const e=(S.g.log||{})[k]; return e&&e.s===s&&/buduje fort/.test(e.m||""); });
   const warn=noH&&!builtNow;
   return sec(o.title||"Zbuduj fort",(warn?`<p class="awarn">Fort kosztuje 1 chwałę, a nie masz chwały.${AD.k==="war"?" Najpierw kup chwałę (1 złoto).":""}</p>`:"")+
-    free.map(G=>opt(`Fort: ${G.nm}`,fG?{s:-Math.max(0,cost-K.n)}:{s:-Math.max(0,cost-K.n),h:-1},tt=>{ if(fG) kc(tt,s,"fortG"); kc(tt,s,K.k); buildFort(tt,s,G); },{...o,dis:noH,tg:{k:"fort",r:fortRect(s),nm:"Zbuduj fort"},log:`buduje fort (${G.nm})`,gain:`+2 siły, produkcja ${PROD_GEN[G.r]} +1${fG?" · karta imperialna: bez kosztu chwały":""}`})).join(""));
+    free.map(G=>opt(`Fort: ${G.nm}`,fG?{s:-Math.max(0,cost-K.n)}:{s:-Math.max(0,cost-K.n),h:-1},tt=>{ if(fG) kc(tt,s,"fortG"); kc(tt,s,K.k); buildFort(tt,s,G); },{...o,dis:noH,tg:{ai:"mil",k:"fort",r:fortRect(s),nm:"Zbuduj fort"},log:`buduje fort (${G.nm})`,gain:`+2 siły, produkcja ${PROD_GEN[G.r]} +1${fG?" · karta imperialna: bez kosztu chwały":""}`})).join(""));
 }
 function secMain(){
   return `<div class="subhead">Dowolna akcja główna · pozostało: <b>${AD.sub}</b></div>`+
@@ -1509,7 +1511,8 @@ function renderCF(){ const el=dlg("cfmdlg","Potwierdzenie akcji"), T=CF.T; if(!T
     else if(hasW&&hasG) wsel=`<div class="an">Kogo wysyłasz?</div><div class="vb"><button class="vbtn" data-wk="wrk" aria-pressed="${CF.wk==="wrk"}">Robotnika</button><button class="vbtn" data-wk="gen" aria-pressed="${CF.wk==="gen"}">Geniusza (+1 do produkcji)</button></div>`;
     else if(hasG){ CF.wk="gen"; wsel=`<p class="an">Wyślesz geniusza (+1 do produkcji) – nie masz wolnego zwykłego robotnika.</p>`; } }
   const bal=d=>{ const k=Object.keys(d).filter(r=>d[r]); return k.length?"Po akcji: "+k.map(r=>`${RK(r,res[r]||0)} → ${RK(r,(res[r]||0)+d[r])}`).join(" &nbsp; "):"Bez kosztu"; };
-  el.innerHTML=`<header><div><h3>${esc(T.nm||"Akcja")}</h3><p class="an">${esc(seatName(s))} · ${esc((FIELDS[AD.k]||{}).n||"")}</p></div><button class="btn" id="cfX">Anuluj</button></header>
+  const AINM={axe:"robotnik na terytorium",disc:"odkrycie terytorium",won:"cud",mil:"akcja militarna albo fort",pop:"populacja",civ:"robotnik na technologię cywilną",tech:"zakup technologii"};
+  el.innerHTML=`<header><div class="cfh">${T.ai?`<img class="hico" src="${asset("ico/"+T.ai+".png")}" alt="${AINM[T.ai]||""}" title="${AINM[T.ai]||""}">`:""}<div><h3>${esc(T.nm||"Akcja")}</h3><p class="an">${esc(seatName(s))} · ${esc((FIELDS[AD.k]||{}).n||"")}</p></div></div><button class="btn" id="cfX">Anuluj</button></header>
     <div class="kpwrap">${T.img?`<img class="kpimg" src="${T.img}" alt="">`:""}<div class="kpside">${wsel}<div class="an">${T.e.length>1?"Wybierz wariant:":"Potwierdź:"}</div><div class="ab">${T.e.map((e,i)=>`<button class="ao ${e.lack.length?"lack":""}" data-ce="${i}" ${e.lack.length?"disabled":""}><span class="al">${e.ico||""}${esc(e.label)}</span><span class="ac">${costHTML(e.delta)}</span>${e.kt?`<span class="ag">Karta imperialna: ${esc(e.kt)}</span>`:""}${e.joker?`<span class="aw">Brakuje ${esc(e.joker)} – zapłacisz chwałą (joker).</span>`:""}${e.gain?`<span class="ag">${e.gain}</span>`:""}<span class="ahint">${bal(e.delta)}</span>${e.lack.length?`<span class="aw">Brakuje: ${e.lack.map(r=>RES_INFO[r][0]).join(", ")}.</span>`:""}</button>`).join("")}</div>
     <div class="row"><button class="btn" id="cfX2">Anuluj</button></div></div></div>`;
   el.querySelector("#cfX").onclick=closeCF; el.querySelector("#cfX2").onclick=closeCF;
