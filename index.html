@@ -2877,7 +2877,7 @@ const Table = {
       if(bb){ const st=g.barb; bb.classList.toggle("hot",!!st&&!!st.id&&!st.done); bb.disabled=!(st&&st.id); } }
     { const pl=document.getElementById("phaseLbl"), L=phaseLabel(g); if(pl&&pl.textContent!==L.txt){ pl.textContent=L.txt; pl.title=L.hint; }
       const nb=document.getElementById("rNext"), nt=`Dalej: ${nextPhaseName(g)} ▸`; if(nb&&nb.textContent!==nt) nb.textContent=nt; }
-    if(S.auto&&g.turn&&S.me!==g.turn){ S.me=g.turn; saveSeat(S.code,S.me); }
+    if(S.auto&&g.turn&&S.me!==g.turn){ S.me=g.turn; S.pv=g.turn; saveSeat(S.code,S.me); } /* tura przechodzi: widok, panel i ręka idą za aktywnym graczem */
     renderTurn(g); renderAgr();
     if(g.evB&&S.me&&!this._evB){ this._evB=true; const host=!g.host||g.host===CID; setTimeout(()=>{ if(S.g.evB) applyFirstEvent(); },host?200:9000+Math.random()*2000); }
     annCheck(); pendCheck(); renderRez(); renderGens();
