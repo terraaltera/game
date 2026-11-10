@@ -338,6 +338,36 @@ input[type=text]{background:#0f1317;border:1px solid var(--line);border-radius:6
 #act .bsec .bt{display:inline-flex;align-items:center;flex-wrap:wrap;gap:4px}
 #act .bsec .bt em{font-size:12px}
 #act .mkstrip{gap:10px}
+#act .atiles{display:flex;flex-wrap:wrap;gap:10px;padding:4px 0}
+#act .atile{position:relative;display:inline-flex;align-items:center;gap:4px;min-width:64px;min-height:64px;padding:6px 10px;border-radius:12px;border:2px solid var(--line);background:rgba(255,255,255,.05);cursor:pointer;color:var(--ink)}
+#act .atile:hover{border-color:#e8c766;background:rgba(232,199,102,.12)}
+#act .atile.sel{border-color:#e8c766;background:rgba(232,199,102,.2);box-shadow:0 0 12px rgba(232,199,102,.45)}
+#act .atile.off,#act .atile:disabled{opacity:.35;filter:grayscale(.8);cursor:not-allowed}
+#act .atile.off:disabled{pointer-events:auto}
+#act .tico{width:48px;height:48px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+#act .tlab{font-size:13px;font-weight:700;max-width:200px;text-align:left}
+#act .adet{border:1px solid #8a7330;border-radius:10px;padding:8px;background:rgba(232,199,102,.06);display:flex;flex-direction:column;gap:6px}
+#act .adh{display:flex;align-items:center;gap:6px;font-size:14px;color:#f0d68a}
+#act .orow{display:flex;flex-direction:column;align-items:stretch;gap:4px;border-top:1px solid var(--line);padding-top:6px}
+#act .othumb{height:46px;border-radius:4px}
+#act .onm{font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px}
+#act .obtns{display:flex;flex-direction:column;gap:4px;flex:1}
+#act .obtn{display:flex;flex-wrap:nowrap;align-items:center;gap:6px;padding:4px 8px;font-size:13px;text-align:left;width:100%}
+#act .obtn .al{flex:1;display:flex;align-items:center;gap:4px}
+#act .obtn .aico{width:24px;height:24px}
+#act .obtn .ac{display:flex}
+#act .ohint{margin:0;font-size:13px;color:#f0d68a}
+#act .obody{display:flex;flex-wrap:wrap;gap:6px}
+#act .obody .an{flex-basis:100%;font-size:12.5px;color:var(--ink-2);margin:0}
+#act .wsel{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px}
+#act .wsel .wl{color:var(--ink-2)}
+#act .wsel .vbtn{display:inline-flex;align-items:center;gap:4px}
+#act .wsrc{font-size:13px;padding:3px 6px;border-radius:6px;background:var(--panel);color:var(--ink);border:1px solid var(--line)}
+#act .kisel{display:flex;gap:10px;align-items:flex-start}
+#act .kimg{height:120px;border-radius:6px}
+#act .kiop{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#act .ainfo{font-size:12.5px}
+#act .ahelp{border-top:1px solid var(--line);padding-top:6px;font-size:13px;color:#cfd6dd;min-height:2.6em}
 #mkbar{position:absolute;left:8px;right:8px;top:8px;z-index:60;background:color-mix(in srgb,var(--panel) 95%,transparent);border:1px solid var(--brass);border-radius:12px;box-shadow:0 8px 22px rgba(0,0,0,.5);padding:6px 10px}
 #mkbar .mkstrip{display:flex;gap:16px;flex-wrap:wrap}
 #mkbar .mg{display:flex;flex-direction:column;gap:3px}
@@ -1167,7 +1197,8 @@ function renderMkBar(){ const vp=document.getElementById("viewport"); if(!vp) re
 /* ===== tryb klikania: pola docelowe (podświetlenia) zbierane w TG; pasek akcji zawiera tylko przyciski bez miejsca na planszy ===== */
 let KIOV=null, TG={};
 const TGM='<i class="tgm"></i>';
-function regT(tg,e){ const T=TG[tg.k]||(TG[tg.k]={...tg,e:[]}); T.e.push(e); return TGM; }
+let GRP=null, REGN=0, GRPN=0, MKON=new Set(), MKSEL=[];
+function regT(tg,e){ const T=TG[tg.k]||(TG[tg.k]={...tg,e:[]}); e._k=tg.k; e._n=++REGN; T.e.push(e); return TGM; }
 const VLAB={1:"Wariant: za 1 kamień mniej",2:"Wariant: 1 wpływ i za 2 kamienie mniej"};
 const rectAround=(p,h)=>[p[0]-h,p[1]-h,p[0]+h,p[1]+h];
 const kiLab=()=>KIOV.ctx==="sep"?"Osobna akcja z karty imperialnej":"Akcja pola z kartą imperialną";
@@ -1192,11 +1223,13 @@ function opt(label,delta,fn,o={}){
 function act(label,fn){ if(KIOV) return ""; const i=AH.length; AH.push(()=>{ fn(); renderAD(); }); return `<button class="btn" data-h="${i}">${label}</button>`; }
 const pickMsgs=b=>(b.match(/<p class="(awarn|okmsg)">[\s\S]*?<\/p>/g)||[]).join("");
 const sec=(title,body,note)=>{ if(KIOV){ KIOV.hit=false; return ""; }
+  if(GRP){ const ents=[]; for(const key in TG) TG[key].e.forEach(e=>{ if(e._n>GRPN) ents.push(e); }); GRPN=REGN;
+    GRP.push({title,body,ents,ico:secIco(title)||secIco(String(body).replace(/<[^>]+>/g," "))}); }
   const t=body.includes(TGM), b=/<button/.test(body);
   if(!t&&!b){ const w=pickMsgs(body); return w?`<div class="bsec"><span class="bt">${title}</span>${w}</div>`:""; }
   const ic=secIco(title);
   return `<div class="bsec${t?" tg":""}"><span class="bt">${ic?`<img class="sico" src="${asset("ico/"+ic+".png")}" alt="">`:""}${title}${t?' <em>– wybierz na planszy</em>':""}</span>${b?`<span class="bb">${body}</span>`:pickMsgs(body)}</div>`; };
-const SEC_ICO=[[/Odkryj/,"disc"],[/populacj/i,"pop"],[/terytori/,"axe"],[/cywiln/,"civ"],[/militarn|wojownik/i,"mil"],[/fort/i,"mil"],[/cud/i,"won"],[/technologi/i,"tech"],[/Karawan/,"camel"],[/kartę imperialną/,"crown"]];
+const SEC_ICO=[[/Odkryj|odkryci/,"disc"],[/populacj/i,"pop"],[/terytori/,"axe"],[/cywiln/,"civ"],[/militarn|wojownik/i,"mil"],[/fort/i,"mil"],[/technologi/i,"tech"],[/cud/i,"won"],[/Karawan|karawan/,"camel"],[/kart[ęa] imperialn/,"crown"],[/chwał/,"glory"]];
 const secIco=t=>{ const m=SEC_ICO.find(([r])=>r.test(String(t))); return m?m[1]:""; };
 const FIELD_ICO={bld:"axe",exp:"disc",phi:"tech",gov:"civ",bis:"won",arc:"won",war:"mil",tra:"camel",kpop:"pop",evc:"civ"};
 /* okno akcji: pływające, przesuwane za nagłówek; pozycja zapamiętana w tej przeglądarce */
@@ -1370,7 +1403,9 @@ function renderAD(){
   const host=document.getElementById("viewport")||document.body;
   if(!el||el.parentNode!==host){ if(el) el.remove(); el=document.createElement("div"); el.id="act"; el.setAttribute("role","region"); el.setAttribute("aria-label","Pasek akcji"); host.appendChild(el);
     el.addEventListener("click",e=>{ const m=e.target.closest("[data-tk]"); if(m){ if(m.classList.contains("on")){ UI.preview(null); tgClick(m.dataset.tk); } return; }
-      const b=e.target.closest("[data-h]"); if(b&&!b.disabled){ UI.preview(null); const f=AH[+b.dataset.h]; if(f) f(); } });
+      const b=e.target.closest("[data-h]"); if(b&&!b.disabled){ UI.preview(null); const f=AH[+b.dataset.h]; if(f){ f(); if(AD.open) renderAD(); } } });
+    el.addEventListener("mouseover",e=>{ const d=e.target.closest("[data-help]"), hp=el.querySelector("#ahelp"); if(d&&hp) hp.textContent=d.dataset.help; });
+    el.addEventListener("mouseout",e=>{ const d=e.target.closest("[data-help]"), hp=el.querySelector("#ahelp"); if(d&&hp) hp.textContent=hp.dataset.def||""; });
     ["pointerdown","wheel","dblclick","contextmenu"].forEach(ev=>el.addEventListener(ev,e=>e.stopPropagation()));
     el.addEventListener("mouseover",e=>{ const i=e.target.closest("[data-pv]"); if(i){ const [k,n]=i.dataset.pv.split("|"); UI.preview(faceSrc(k,n)); } });
     el.addEventListener("mouseout",e=>{ if(e.target.closest("[data-pv]")) UI.preview(null); }); }
@@ -1460,29 +1495,81 @@ function renderAD(){
       break; }
   }
   return body; };
-  const body=build(), mainSec= AD.sub>0? secMain() : "", kiSec=secKI();
-  /* karta imperialna wybrana z ręki: podświetlają się miejsca dla każdej opcji; kliknięte miejsce decyduje o opcji */
-  let kiBar="";
-  if(AD.ki){ const c=g.cards[AD.ki], K=KI[c.n]||{act:[]}, items=[];
-    const cnt=j=>Object.values(TG).reduce((a,T)=>a+T.e.filter(e=>e.pre===j).length,0);
-    K.act.forEach((o,j)=>{
-      if(o.t==="disc"){ KIOV={s,k:o.a,n:nv(o.n),j,ctx:"field",hit:false,txt:kiOptText(o)}; build(); if(AD.sub>0) secMain(); KIOV.ctx="sep"; KIOV.hit=false; kiSepSecs(o.a,k); KIOV=null;
-        if(cnt(j)){ items.push(`<span class="kichip">${esc(kiOptText(o))} (kliknij podświetlone)</span>`); return; } }
-      items.push(act(`Zagraj: ${esc(kiOptText(o))}`,()=>kiPlayOpt(j))); });
-    kiBar=`<div class="bsec ki"><span class="bt"><img src="${faceSrc("imp",c.n)}" data-pv="imp|${c.n}" alt=""> Karta imperialna:</span><span class="bb">${items.join("")}${act("Nie zagrywam",()=>{ AD.ki=null; })}</span></div>`; }
-  else if(((pawn&&pawn.k==="amb")||k==="gld")&&phaseOf(g)==="act"&&handImp(s)) kiBar=`<div class="bsec hint"><span class="bt"><img class="sico" src="${asset("ico/crown.png")}" alt="">karta imperialna (opcjonalnie): kliknij kartę w ręce</span></div>`;
-  let srcBar="";
-  if(AD.needW){ const fw=freeWorkers(s);
-    srcBar= AD.src? `<div class="bsec src"><span class="bt">Przenosisz ${g.pieces[AD.src].k==="gen"?"geniusza":"robotnika"} z: ${esc(workerHome(s,AD.src).nm)} – kliknij miejsce docelowe.</span><span class="bb">${act("Anuluj przeniesienie",()=>{ AD.src=null; })}</span></div>`
-      : `<div class="bsec hint"><span class="bt">${AICO.wrk(s).replace('class="aico"','class="aico sm"')}wolni: <b>${fw.length}</b>${fw.some(id=>g.pieces[id].k==="gen")?` (geniusze: ${fw.filter(id=>g.pieces[id].k==="gen").length})`:""} · przeniesienie: kliknij robotnika na planszy</span></div>`; }
+  GRP=[]; GRPN=REGN;
+  const body=build(), mainSec= AD.sub>0? secMain() : "", kiSec=secKI(); const groups=GRP; GRP=null;
+  /* ===== okno akcji krok po kroku: ikony dostępnych akcji, po kliknięciu opcje pod spodem, komentarz na dole ===== */
+  const kiAllowed=((pawn&&pawn.k==="amb")||k==="gld")&&phaseOf(g)==="act";
+  const handKI=Object.keys(g.cards).filter(id=>{ const c=g.cards[id]; return c&&c.z==="hand"&&c.o===s&&c.k==="imp"; });
+  /* karta imperialna wybrana z ręki: opcje karty i ich miejsca (e.pre = numer opcji) */
+  let kiOpts=null;
+  if(AD.ki){ const c=g.cards[AD.ki], K=KI[c.n]||{act:[]}; kiOpts=[];
+    K.act.forEach((o,j)=>{ let n0=REGN;
+      if(o.t==="disc"){ KIOV={s,k:o.a,n:nv(o.n),j,ctx:"field",hit:false,txt:kiOptText(o)}; build(); if(AD.sub>0) secMain(); KIOV.ctx="sep"; KIOV.hit=false; kiSepSecs(o.a,k); KIOV=null; }
+      const ents=[]; for(const key in TG) TG[key].e.forEach(e=>{ if(e.pre===j&&e._n>n0) ents.push(e); });
+      kiOpts.push({j,o,txt:kiOptText(o),ents,direct:!(o.t==="disc"&&ents.length),ok:!(o.t==="disc")||ents.some(e=>!e.lack.length)}); }); }
+  const avail=G=>G.ents.some(e=>!e.lack.length)||/<button(?![^>]*disabled)[^>]*data-h/.test(G.body);
+  const shown=groups.filter(avail);
+  if(AD.grp&&!shown.some(G=>G.title===AD.grp)) AD.grp=null;
+  const RG={złot:"g",kamie:"s",energi:"e",wpływ:"i"}, RGEN={g:"złota",s:"kamienia",e:"energii",i:"wpływu"};
+  const ACTN={disc:"odkrycie terytorium",pop:"zwiększenie populacji",axe:"wysłanie robotnika na terytorium",civ:"wysłanie robotnika na technologię cywilną",mil:"akcję militarną",tech:"zakup technologii",won:"cud",crown:"kartę imperialną",camel:"karawanę"};
+  const disc=t=>{ const m=/\(−(\d+) (złot|kamie|energi|wpływ)/.exec(t); return m?{n:+m[1],r:RG[m[2]]}:null; };
+  const icoHTML=(ic,cls)=>ic==="glory"?RK("h",""):ic?`<img class="${cls||"tico"}" src="${asset("ico/"+ic+".png")}" alt="">`:"";
+  const plain=t=>String(t||"").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
+  const helpOf=G=>{ const d=disc(G.title); let base=plain(G.title).replace(/\s*\(−[^)]*\)/,"");
+    if(/^(Dodatkowo|Wybierz)/.test(base)){ const L=[...String(G.body).matchAll(/<span class="al">([^<]*)<\/span>/g)].map(m=>m[1]); if(L.length) base=L.join(" albo "); }
+    return d&&ACTN[G.ico]?`Zniżka na ${ACTN[G.ico]}: ${d.n} ${RES_INFO[d.r][0]}. ${base}.`:base+"."; };
+  const tile=(id,ic,chip,label,help,on,sel,off)=>`<button class="atile ${sel?"sel":""} ${off?"off":""}" data-h="${id}" data-help="${esc(help)}" ${on?"":"disabled"}>${chip||""}${icoHTML(ic)||`<span class="tlab">${esc(label)}</span>`}</button>`;
+  let tiles="";
+  shown.forEach(G=>{ const i=AH.length; AH.push(()=>{ AD.grp=AD.grp===G.title?null:G.title; AD.kij=undefined; AD.crown=false; }); const d=disc(G.title);
+    tiles+=tile(i,G.ico,d?RK(d.r,d.n):"",plain(G.title),helpOf(G),true,AD.grp===G.title); });
+  if(kiAllowed&&handKI.length){ const used=kiUsedThisTurn(s); const i=AH.length; AH.push(()=>{ if(used) return; AD.crown=!AD.crown; AD.grp=null; if(!AD.crown){ AD.ki=null; AD.kij=undefined; } });
+    tiles+=tile(i,"crown","", "Karta imperialna", used?"Karta imperialna została już zagrana – w tej turze nie możesz zagrać kolejnej.":"Zagraj kartę imperialną: kliknij ikonę, a potem kartę w ręce na dole.", !used, AD.crown||!!AD.ki, used); }
+  /* wybór robotnika: wolny, geniusz albo przeniesienie z planszy */
+  const wkSel=()=>{ const fw=freeWorkers(s), hasW=fw.some(id=>g.pieces[id].k==="wrk"), hasG=fw.some(id=>g.pieces[id].k==="gen"), src=srcWorkers(s);
+    if(!AD.wkSel) AD.wkSel=hasW?"wrk":hasG?"gen":"wrk";
+    const b=(lab,act,on,help)=>{ const i=AH.length; AH.push(act); return `<button class="vbtn" aria-pressed="${on}" data-h="${i}" data-help="${esc(help)}">${lab}</button>`; };
+    let h=`<div class="wsel"><span class="wl">Kogo wysyłasz:</span>`;
+    if(hasW) h+=b(`${AICO.wrk(s).replace('class="aico"','class="aico sm"')} wolny robotnik`,()=>{ AD.wkSel="wrk"; AD.src=null; },!AD.src&&AD.wkSel==="wrk","Nowy robotnik z zapasu.");
+    if(hasG) h+=b(`${AICO.wrk(s).replace('class="aico"','class="aico sm"')}★ geniusz`,()=>{ AD.wkSel="gen"; AD.src=null; },!AD.src&&AD.wkSel==="gen","Geniusz daje +1 do produkcji.");
+    if(src.length) h+=`<select class="wsrc" data-help="Przenieś robotnika stojącego na planszy – tam produkcja spadnie."><option value="">${hasW||hasG?"albo przenieś z…":"przenieś z…"}</option>${src.map(id=>`<option value="${id}" ${AD.src===id?"selected":""}>${esc(workerHome(s,id).nm)}</option>`).join("")}</select>`;
+    return h+`</div>`; };
+  /* lista opcji (miejsc) w oknie: wiersz = miejsce, przyciski = warianty z kosztem */
+  const MK=[];
+  const optRows=(ents)=>{ const byK={}; ents.forEach(e=>{ if(/^m:/.test(e._k)){ MK.push(e); return; } (byK[e._k]=byK[e._k]||[]).push(e); });
+    let h=""; for(const key in byK){ const T=TG[key]; if(!T) continue;
+      h+=`<div class="orow" data-help="${esc(plain(T.nm))}"><span class="onm">${T.img?`<img class="othumb" src="${T.img}" alt="">`:""}${esc(plain(T.nm||""))}</span><span class="obtns">${byK[key].map(e=>{ const i=AH.length;
+        AH.push(()=>{ if(cantPay(s,e.delta)) return; AD.wk=AD.src?null:(AD.wkSel||"wrk"); if(e.pre!==undefined&&AD.ki){ const id=AD.ki; AD.ki=null; AD.crown=false; AD.kij=undefined; Object.assign(KP,{open:false,id,ph:"act",seat:s,sel:{act:e.pre}}); playKI(); } e.run(); AD.wk=null; AD.grp=null; });
+        return `<button class="ao obtn ${e.lack.length?"lack":""}" data-h="${i}" ${e.lack.length?"disabled":""} data-help="${esc(plain(e.label)+(e.joker?` – brakuje ${e.joker}, zapłacisz chwałą`:"")+(e.lack.length?` – brakuje: ${e.lack.map(r=>RES_INFO[r][0]).join(", ")}`:""))}">${e.ico||""}<span class="al">${esc(e.label)}</span><span class="ac">${costHTML(e.delta)}</span></button>`; }).join("")}</span></div>`; }
+    if(MK.length) h+=`<p class="ohint">Wybierz kartę na torze kart u góry (podświetlone).</p>`;
+    return h; };
+  let detail="";
+  const Gs=shown.find(G=>G.title===AD.grp);
+  if(Gs){ detail+=`<div class="adet"><div class="adh">${icoHTML(Gs.ico,"sico")}<b>${esc(plain(Gs.title))}</b></div>`;
+    if(Gs.ents.some(e=>e.wk&&!/^m:/.test(e._k))) detail+=wkSel();
+    detail+=optRows(Gs.ents.filter(e=>!e.lack.length||true));
+    if(/<button/.test(Gs.body)) detail+=`<div class="obody">${Gs.body}</div>`;
+    detail+=`</div>`; }
+  if(kiAllowed&&(AD.crown||AD.ki)){ detail+=`<div class="adet ki"><div class="adh">${icoHTML("crown","sico")}<b>Karta imperialna</b></div>`;
+    if(!AD.ki) detail+=`<p class="ohint">Kliknij kartę imperialną w ręce na dole (podświetlone).</p>`;
+    else { const c=g.cards[AD.ki]; detail+=`<div class="kisel"><img class="kimg" src="${faceSrc("imp",c.n)}" alt="" data-pv="imp|${c.n}"><div class="kiop">${kiOpts.map(O=>{ const i=AH.length;
+        AH.push(()=>{ if(O.direct){ kiPlayOpt(O.j); AD.crown=false; return; } AD.kij=AD.kij===O.j?undefined:O.j; });
+        const ic=secIco(O.txt), m=/taniej o (\d+) (zł|kam|ener|wpł)/.exec(O.txt), ch=m?RK({zł:"g",kam:"s",ener:"e",wpł:"i"}[m[2]],m[1]):""; return `<button class="atile ${AD.kij===O.j?"sel":""}" data-h="${i}" data-help="${esc(O.txt)}" ${O.ok?"":"disabled"}>${ch}${icoHTML(ic)||`<span class="tlab">${esc(O.txt)}</span>`}</button>`; }).join("")}
+        ${(()=>{ const i=AH.length; AH.push(()=>{ AD.ki=null; AD.kij=undefined; AD.crown=false; }); return `<button class="btn" data-h="${i}">Nie zagrywam</button>`; })()}</div></div>`;
+      const O=kiOpts.find(O=>O.j===AD.kij); if(O){ if(O.ents.some(e=>e.wk&&!/^m:/.test(e._k))) detail+=wkSel(); detail+=optRows(O.ents); } }
+    detail+=`</div>`; }
+  MKON=new Set(MK.filter(e=>!e.lack.length).map(e=>e._k)); MKSEL=MK;
+  const info=groups.filter(G=>!avail(G)).map(G=>pickMsgs(G.body)).join("");
   const myTurn=(phaseOf(g)==="act"||(phaseOf(g)==="dip"&&AD.dipEnd))&&g.turn===s;
   const iEnd=AH.length; AH.push(()=>{ closeAD(); if(myTurn) endTurn(); Cam.preset("main"); });
   const iX=AH.length; AH.push(()=>closeAD());
   const iP=AH.length; AH.push(()=>{ closeAD(); passTurn(); Cam.preset("main"); });
-  const P=(k2)=>`<span class="rv ${(res[k2]||0)<0?"neg":""}" title="${RES_INFO[k2][0]}"><i style="background:${RES_INFO[k2][1]}"></i>${res[k2]||0}</span>`;
+  const defHelp=shown.length||(kiAllowed&&handKI.length)?"Najedź na ikonę, żeby zobaczyć opis. Kliknij, żeby wybrać.":"Brak dostępnych akcji – zakończ ruch.";
   el.innerHTML=`<div class="ahd" title="Przeciągnij, żeby przesunąć okno">${FIELD_ICO[k]?`<img class="fico" src="${asset("ico/"+FIELD_ICO[k]+".png")}" alt="">`:""}<span class="fhead"><span class="fname">${F.n}</span><span class="who">${swatch(s)} ${esc(seatName(s))}${pawn?" · "+PIECE_PL[pawn.k]:""}</span></span><span class="sp"></span>
-    <button class="btn primary" data-h="${iEnd}" title="${myTurn?"Kończy ruch; kolejka przechodzi na następnego gracza":"Zamyka pasek"}">${myTurn?"Koniec ruchu ▸":"Gotowe"}</button>${myTurn?`<button class="btn" data-h="${iP}" title="Kończy akcje w tej rundzie – kolejka Cię pomija">Pas</button>`:""}<button class="btn" data-h="${iX}" title="Zamknij pasek bez kończenia ruchu" aria-label="Zamknij pasek">✕</button></div>
-    <div class="bsecs">${warn.map(w=>`<p class="awarn">${w}</p>`).join("")}${srcBar}${kiBar}${body}${mainSec}${kiSec}</div>`;
+    <button class="btn primary" data-h="${iEnd}" title="${myTurn?"Kończy ruch; kolejka przechodzi na następnego gracza":"Zamyka okno"}">${myTurn?"Koniec ruchu ▸":"Gotowe"}</button>${myTurn?`<button class="btn" data-h="${iP}" title="Kończy akcje w tej rundzie – kolejka Cię pomija">Pas</button>`:""}<button class="btn" data-h="${iX}" title="Zamknij okno bez kończenia ruchu" aria-label="Zamknij okno">✕</button></div>
+    <div class="bsecs">${warn.map(w=>`<p class="awarn">${w}</p>`).join("")}${AD.sub>0?`<div class="subhead">Dowolna akcja główna · pozostało: <b>${AD.sub}</b></div>`:""}
+    <div class="atiles">${tiles||""}</div>${info?`<div class="ainfo">${info}</div>`:""}${detail}</div>
+    <div class="ahelp" id="ahelp" data-def="${esc(defHelp)}">${esc(defHelp)}</div>`;
+  el.querySelectorAll(".wsrc").forEach(sl=>sl.onchange=()=>{ AD.src=sl.value||null; renderAD(); });
   el.hidden=false;
   renderTargets(); Table.renderHand();
   /* pasek urósł albo zmalał: plansza gracza ponownie mieści się pod nim */
@@ -1507,13 +1594,13 @@ function kiPlayOpt(j){ const id=AD.ki; if(!id) return; AD.ki=null; Object.assign
 function kiHandClick(id){ const c=S.g.cards[id], ph=phaseOf(S.g); if(!c) return; UI.preview(null);
   if(TURN_PHASES.includes(ph)&&c.o!==S.g.turn){ UI.toast(`Tę kartę może zagrać tylko ${seatName(c.o)} – teraz jest tura: ${seatName(S.g.turn)}.`); return; }
   if(ph==="act"&&kiUsedThisTurn(c.o)){ UI.toast("W tej turze już zagrałeś kartę imperialną – tylko 1 na turę."); return; }
-  if(ph==="act"&&AD.open&&AD.seat===c.o&&((S.g.pieces[AD.pawn]&&S.g.pieces[AD.pawn].k==="amb")||AD.k==="gld")){ AD.ki=AD.ki===id?null:id; renderAD(); return; }
+  if(ph==="act"&&AD.open&&AD.seat===c.o&&((S.g.pieces[AD.pawn]&&S.g.pieces[AD.pawn].k==="amb")||AD.k==="gld")){ AD.ki=AD.ki===id?null:id; AD.kij=undefined; AD.crown=true; AD.grp=null; renderAD(); return; }
   if(ph==="dip"){ openPlayImp(id,"dip"); return; }
   if(ph==="act"){ UI.toast("Kartę imperialną zagrywasz razem z ambasadorem: postaw ambasadora na polu akcji, a potem kliknij kartę."); return; }
   UI.toast("Karty imperialne zagrywa się w fazie dyplomacji albo akcji."); }
 /* kopia rynku nad planszą gracza: dostępne karty podświetlone, reszta przyciemniona */
 function mkStrip(){ const M=marketCards(); if(!M.length) return "";
-  return `<div class="mkstrip">${[2,1,0].map(r=>{ const L=M.filter(m=>m.row===r); return `<div class="mg"><div class="mgl">${3-r} ${r===2?"złoto":"złota"}${r===0?" + karta imperialna":""}</div><div class="mgc">${L.map(m=>{ const T=TG["m:"+m.id], on=!!T&&T.e.some(e=>!e.lack.length);
+  return `<div class="mkstrip">${[2,1,0].map(r=>{ const L=M.filter(m=>m.row===r); return `<div class="mg"><div class="mgl">${3-r} ${r===2?"złoto":"złota"}${r===0?" + karta imperialna":""}</div><div class="mgc">${L.map(m=>{ const T=TG["m:"+m.id], on=!!T&&MKON.has("m:"+m.id);
     return `<button class="mcs ${on?"on":"off"}" data-tk="m:${m.id}" aria-disabled="${!on}" aria-label="${esc((TECH[m.c.n]||{}).nm||"karta")}"><img src="${faceSrc(m.c.k,m.c.n)}" alt="" data-pv="${m.c.k}|${m.c.n}"></button>`; }).join("")}</div></div>`; }).join("")}</div>`; }
 /* robotnicy stojący na technologii albo terytorium (do przeniesienia) */
 function workerHome(s,id,lying){ const p=S.g.pieces[id]; if(!p||p.s!==s||p.gone||(p.l&&!lying)||(p.k!=="wrk"&&p.k!=="gen")) return null;
@@ -1537,7 +1624,8 @@ function renderTargets(){ const W=document.getElementById("world"); if(!W) retur
     c.addEventListener("click",e=>{ const d=e.target.closest("[data-tk]"); if(!d) return; e.stopPropagation(); UI.preview(null); tgClick(d.dataset.tk); });
     c.addEventListener("mouseover",e=>{ const d=e.target.closest("[data-pvs]"); if(d) UI.preview(d.dataset.pvs); });
     c.addEventListener("mouseout",e=>{ if(e.target.closest("[data-pvs]")) UI.preview(null); }); }
-  if(!AD.open){ if(c.innerHTML) c.innerHTML=""; return; }
+  /* wybór miejsc odbywa się w oknie akcji – plansza gracza nie jest podświetlana */
+  if(c.innerHTML) c.innerHTML=""; return;
   let h="";
   for(const k in TG){ const T=TG[k]; if(!T.r||!T.e.some(e=>!e.lack.length)) continue; const [a,b,x,y]=T.r;
     h+=`<div class="tgt" data-tk="${k}" ${T.img?`data-pvs="${T.img}"`:""} style="left:${a}px;top:${b}px;width:${x-a}px;height:${y-b}px" title="${esc(T.nm||"")}"></div>`; }
@@ -1547,10 +1635,10 @@ function renderTargets(){ const W=document.getElementById("world"); if(!W) retur
 function tgClick(k){ if(k.indexOf("src:")===0){ const id=k.slice(4); AD.src=AD.src===id?null:id; renderAD(); return; } openCF(k); }
 /* okno potwierdzenia: podgląd karty, wszystkie warianty z kosztem po zniżkach i bilansem */
 const CF={T:null};
-function openCF(k){ const T=TG[k]; if(!T) return; CF.k=k; CF.T=T; CF.wk="wrk"; renderCF(); }
+function openCF(k){ const T=TG[k]; if(!T) return; CF.k=k; CF.T=T; CF.wk="wrk"; CF.only=/^m:/.test(k)&&MKSEL.length?MKSEL.filter(e=>e._k===k):null; renderCF(); }
 function closeCF(){ CF.T=null; const el=document.getElementById("cfmdlg"); if(el) el.hidden=true; }
 function renderCF(){ const el=dlg("cfmdlg","Potwierdzenie akcji"), T=CF.T; if(!T){ el.hidden=true; return; }
-  const s=AD.seat, res=S.g.players[s].res||{}, wk=T.e.some(e=>e.wk), fw=freeWorkers(s);
+  const E=CF.only&&CF.only.length?CF.only:T.e; const s=AD.seat, res=S.g.players[s].res||{}, wk=E.some(e=>e.wk), fw=freeWorkers(s);
   const hasW=fw.some(id=>S.g.pieces[id].k==="wrk"), hasG=fw.some(id=>S.g.pieces[id].k==="gen");
   let wsel="";
   if(wk){ if(AD.src){ const hm=workerHome(s,AD.src); wsel=`<p class="okmsg">Przenosisz ${S.g.pieces[AD.src].k==="gen"?"geniusza":"robotnika"} z: <b>${esc(hm.nm)}</b> (tam produkcja spadnie: ${prodText(hm.p)}).</p>`; }
@@ -1559,11 +1647,11 @@ function renderCF(){ const el=dlg("cfmdlg","Potwierdzenie akcji"), T=CF.T; if(!T
   const bal=d=>{ const k=Object.keys(d).filter(r=>d[r]); return k.length?"Po akcji: "+k.map(r=>`${RK(r,res[r]||0)} → ${RK(r,(res[r]||0)+d[r])}`).join(" &nbsp; "):"Bez kosztu"; };
   const AINM={axe:"robotnik na terytorium",disc:"odkrycie terytorium",won:"cud",mil:"akcja militarna albo fort",pop:"populacja",civ:"robotnik na technologię cywilną",tech:"zakup technologii"};
   el.innerHTML=`<header><div class="cfh">${T.ai?`<img class="hico" src="${asset("ico/"+T.ai+".png")}" alt="${AINM[T.ai]||""}" title="${AINM[T.ai]||""}">`:""}<div><h3>${esc(T.nm||"Akcja")}</h3><p class="an">${esc(seatName(s))} · ${esc((FIELDS[AD.k]||{}).n||"")}</p></div></div><button class="btn" id="cfX">Anuluj</button></header>
-    <div class="kpwrap">${T.img?`<img class="kpimg" src="${T.img}" alt="">`:""}<div class="kpside">${wsel}<div class="an">${T.e.length>1?"Wybierz wariant:":"Potwierdź:"}</div><div class="ab">${T.e.map((e,i)=>`<button class="ao ${e.lack.length?"lack":""}" data-ce="${i}" ${e.lack.length?"disabled":""}><span class="al">${e.ico||""}${esc(e.label)}</span><span class="ac"><span class="ckl">całkowity koszt</span>${costHTML(e.delta)}</span>${e.kt?`<span class="ag">Karta imperialna: ${esc(e.kt)}</span>`:""}${e.joker?`<span class="aw">Brakuje ${esc(e.joker)} – zapłacisz chwałą (joker).</span>`:""}${e.lack.length?`<span class="aw">Brakuje: ${e.lack.map(r=>RES_INFO[r][0]).join(", ")}.</span>`:""}</button>`).join("")}</div>
+    <div class="kpwrap">${T.img?`<img class="kpimg" src="${T.img}" alt="">`:""}<div class="kpside">${wsel}<div class="an">${E.length>1?"Wybierz wariant:":"Potwierdź:"}</div><div class="ab">${E.map((e,i)=>`<button class="ao ${e.lack.length?"lack":""}" data-ce="${i}" ${e.lack.length?"disabled":""}><span class="al">${e.ico||""}${esc(e.label)}</span><span class="ac"><span class="ckl">całkowity koszt</span>${costHTML(e.delta)}</span>${e.kt?`<span class="ag">Karta imperialna: ${esc(e.kt)}</span>`:""}${e.joker?`<span class="aw">Brakuje ${esc(e.joker)} – zapłacisz chwałą (joker).</span>`:""}${e.lack.length?`<span class="aw">Brakuje: ${e.lack.map(r=>RES_INFO[r][0]).join(", ")}.</span>`:""}</button>`).join("")}</div>
     <div class="row"><button class="btn" id="cfX2">Anuluj</button></div></div></div>`;
   el.querySelector("#cfX").onclick=closeCF; el.querySelector("#cfX2").onclick=closeCF;
   el.querySelectorAll("[data-wk]").forEach(b=>b.onclick=()=>{ CF.wk=b.dataset.wk; renderCF(); });
-  el.querySelectorAll("[data-ce]").forEach(b=>b.onclick=()=>{ const e=T.e[+b.dataset.ce]; if(cantPay(s,e.delta)) return; const w=CF.wk; closeCF(); UI.preview(null);
+  el.querySelectorAll("[data-ce]").forEach(b=>b.onclick=()=>{ const e=E[+b.dataset.ce]; if(cantPay(s,e.delta)) return; const w=CF.wk; closeCF(); UI.preview(null);
     AD.wk=w; if(e.pre!==undefined&&AD.ki){ const id=AD.ki; AD.ki=null; Object.assign(KP,{open:false,id,ph:"act",seat:s,sel:{act:e.pre}}); playKI(); }
     e.run(); AD.wk=null; });
   el.hidden=false; el.querySelector("[data-ce]:enabled")?.focus(); }
@@ -3058,7 +3146,7 @@ const Table = {
     const HS=S.auto?(S.pv||S.me):S.me; /* gra admina: ręka zmienia się z widokiem; zwykła gra: zawsze własna */
     const ids=Object.keys(g.cards).filter(id=>{ const c=g.cards[id]; return c&&c.z==="hand"&&c.o===HS; }).sort((a,b)=>g.cards[a].k.localeCompare(g.cards[b].k)||g.cards[a].n-g.cards[b].n);
     const sig=ids.join(",")+"|"+HS;
-    const kiOn=AD.open&&phaseOf(g)==="act"&&AD.seat===S.me&&((g.pieces[AD.pawn]&&g.pieces[AD.pawn].k==="amb")||AD.k==="gld");
+    const kiOn=AD.open&&phaseOf(g)==="act"&&AD.seat===S.me&&(AD.crown||AD.ki)&&((g.pieces[AD.pawn]&&g.pieces[AD.pawn].k==="amb")||AD.k==="gld");
     const cls=()=>box.querySelectorAll(".hc").forEach(el=>{ const c=g.cards[el.dataset.hid]; el.classList.toggle("kion",!!(kiOn&&c&&c.k==="imp")); el.classList.toggle("kisel",AD.ki===el.dataset.hid); });
     if(box._sig===sig){ cls(); return; } box._sig=sig;
     box.innerHTML = ids.length? ids.map(id=>{ const c=g.cards[id]; return `<div class="hc" data-hid="${id}" tabindex="0" aria-label="${esc(DECK_PL[c.k])}"><img src="${faceSrc(c.k,c.n)}" alt=""></div>`; }).join("")
