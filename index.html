@@ -1428,7 +1428,8 @@ function kiSepSecs(a,F){
   if(a==="ws"||a==="as") secWonder(0);
   if(a==="p") secPop(0);
 }
-function kiUsedThisTurn(s){ const U=S.g.kiUse||{}; return !!U[s] && U[s]===S.g.turnT; }
+/* KI zagrane w tej turze liczy się z dziennika (cofnięty ruch znika z dziennika), a nie z licznika kiUse */
+function kiUsedThisTurn(s){ const log=S.g.log||{}; return turnEntries(S.g).some(k=>{ const e=log[k]; return e&&e.s===s&&/zagrywa kartę imperialną w fazie akcji/.test(e.m||""); }); }
 function kiPlayOpt(j){ const id=AD.ki; if(!id) return; AD.ki=null; Object.assign(KP,{open:false,id,ph:"act",seat:AD.seat,sel:{act:j}}); playKI(); }
 function kiHandClick(id){ const c=S.g.cards[id], ph=phaseOf(S.g); if(!c) return; UI.preview(null);
   if(TURN_PHASES.includes(ph)&&c.o!==S.g.turn){ UI.toast(`Tę kartę może zagrać tylko ${seatName(c.o)} – teraz jest tura: ${seatName(S.g.turn)}.`); return; }
