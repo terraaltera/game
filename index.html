@@ -1077,8 +1077,9 @@ function tx(seat,base){
   t.imp=()=>{ const ids=Act.deckCards("imp").filter(id=>!t.patch.cards[id]); if(!ids.length){ UI.toast("Talia kart imperialnych jest pusta."); return t; }
     const inHand=Object.keys(S.g.cards).filter(id=>{ const c=S.g.cards[id]; const z=(t.patch.cards[id]&&t.patch.cards[id].z)||c.z, o=(t.patch.cards[id]&&"o" in t.patch.cards[id])?t.patch.cards[id].o:c.o; return c.k==="imp"&&z==="hand"&&o===seat; }).length;
     const lim=impLimit(levelOf(seat,"i",t.patch));
-    if(inHand>=lim){ t.note(`limit kart imperialnych na ręce (${lim}) – karty nie dobrano`); t.limitHit=lim; return t; }
-    t.card(ids[ids.length-1],{z:"hand",o:seat,f:true}); t.gotImp=(t.gotImp||0)+1; return t; };
+    t.card(ids[ids.length-1],{z:"hand",o:seat,f:true}); t.gotImp=(t.gotImp||0)+1;
+    if(inHand>=lim){ t.overLim=lim; pendAdd(t,seat,"discI",1); t.note(`na ręce ponad limit (${lim}) – wybierz kartę do odrzucenia`); }
+    return t; };
   t.top=(key,val,old)=>{ t.patch[key]={...(t.patch[key]||{}),...val}; t.before[key]={...(old||{}),...(t.before[key]||{})}; return t; };
   t.pl=(key,val)=>{ if(!(key in t.before.players[seat])){ const o=S.g.players[seat][key]; t.before.players[seat][key]= o===undefined?null:JSON.parse(JSON.stringify(o)); } t.patch.players[seat][key]=val; return t; };
   t.note=s=>{ t.notes=(t.notes||[]).concat(s); return t; };
@@ -1424,8 +1425,10 @@ function kiSepSecs(a,F){
   if(a==="ws"||a==="as") secWonder(0);
   if(a==="p") secPop(0);
 }
+function kiUsedThisTurn(s){ const U=S.g.kiUse||{}; return !!U[s] && U[s]===S.g.turnT; }
 function kiPlayOpt(j){ const id=AD.ki; if(!id) return; AD.ki=null; Object.assign(KP,{open:false,id,ph:"act",seat:AD.seat,sel:{act:j}}); playKI(); }
 function kiHandClick(id){ const c=S.g.cards[id], ph=phaseOf(S.g); if(!c) return; UI.preview(null);
+  if(ph==="act"&&kiUsedThisTurn(c.o)){ UI.toast("W tej turze już zagrałeś kartę imperialną – tylko 1 na turę."); return; }
   if(ph==="act"&&AD.open&&AD.seat===c.o&&((S.g.pieces[AD.pawn]&&S.g.pieces[AD.pawn].k==="amb")||AD.k==="gld")){ AD.ki=AD.ki===id?null:id; renderAD(); return; }
   if(ph==="dip"){ openPlayImp(id,"dip"); return; }
   if(ph==="act"){ UI.toast("Kartę imperialną zagrywasz razem z ambasadorem: postaw ambasadora na polu akcji, a potem kliknij kartę."); return; }
@@ -1616,7 +1619,7 @@ function prodTx(){
     { const lp=lyingProd(s); if(Object.keys(lp).length) t.note(`leżący robotnicy nie produkują: ${Object.keys(lp).map(k=>`−${lp[k]} ${PROD_NAME[k]}`).join(", ")}`); }
     t.pl("upk",{g:R.up.g||0,i:R.up.i||0});
     if(R.bb) t.pl("bb",{...pl.bb,left:R.bb.left-1});
-    notes.push(`${seatName(s)}: ${["e","s","g","i"].map(k=>`${R.tot[k]>=0?"+":""}${R.tot[k]} ${PROD_NAME[k]}`).join(", ")}, ${R.tot.c>=0?"+":""}${R.tot.c} kultury${R.drawImp?`, ${R.drawImp} karty imp.`:""}${t.notes&&t.notes.length?" ("+t.notes.join("; ")+")":""}`);
+    notes.push(`${seatName(s)}: ${["e","s","g","i"].map(k=>`${R.tot[k]>=0?"+":""}${R.tot[k]} ${PROD_NAME[k]}`).join(", ")}, ${R.tot.c>=0?"+":""}${R.tot.c} kultury, karty imperialne: +${R.drawImp}${R.lv.car?`, karawany: ${R.lv.car} ${R.lv.car===1?"ruch":"ruchy"}`:""}${t.notes&&t.notes.length?" ("+t.notes.join("; ")+")":""}`);
   });
   return {base,notes};
 }
@@ -1711,7 +1714,7 @@ function startRound(){
   const msg=`rozpoczyna rundę ${r} (era ${ERA_PL[era]}): nowy rynek 12 kart, wydarzenie „${E?E[0]:"brak"}”, licytacja: ${E&&E[1]==="cf"?"kolonia i łaska cesarska":"2 kolonie"}${bid?", barbarzyńcy (tajna licytacja)":""}. Ambasadorzy wrócili.${upW.length?` Leżący robotnicy wstali (${upW.length}).`:""} Pierwszy gracz: ${seatName(seats[first])}.${seats.filter(s=>leadOf(s)===277&&(r===2||r===4)).map(s=>` Boudika (${seatName(s)}): ${r===2?"+3 kamienie":"+2 złota"}.`).join("")}${mw.length?` Na rynku ${mw.length===1?"jest 1 karta":`są ${mw.length} karty`} z ikoną wojny: znacznik wojny +${mw.length}.`:""}${cw.length?` Kolonia z ikoną wojny: znacznik wojny +${cw.length}.`:""}${evN&&EVALL[evN]?` Wydarzenie dla wszystkich: ${EVALL[evN].t}${bn.length?" ("+bn.join("; ")+")":""}.`:""}${evN&&EVMOD[evN]?` W tej rundzie: ${EVMOD[evN].t}.`:""} Faza: Dyplomacja.`;
   { const sub=`Era ${ERA_PL[era]} · runda ${r}`;
     annAdd(t,"Wydarzenie",[`„${E?E[0]:"brak"}”`,evN&&EVALL[evN]?`Dla wszystkich: ${EVALL[evN].t}.`:"",...bn,evN&&EVMOD[evN]?`W tej rundzie: ${EVMOD[evN].t}.`:"",`Licytacja: ${E&&E[1]==="cf"?"kolonia i łaska cesarska":"2 kolonie"}.`,
-      bid?"Barbarzyńcy! Za chwilę każdy gracz tajnie deklaruje, ile poświęca.":"",mw.length?`Na rynku ${mw.length} ${mw.length===1?"karta":"karty"} z ikoną wojny: znacznik wojny +${mw.length}.`:"",cw.length?`Kolonia z ikoną wojny: znacznik wojny +${cw.length}.`:"",`Pierwszy gracz: ${seatName(seats[first])}.`].filter(Boolean),sub);
+      bid?"Barbarzyńcy! Za chwilę każdy gracz tajnie deklaruje, ile poświęca.":"",mw.length?`Na rynku ${mw.length} ${mw.length===1?"karta":"karty"} z ikoną wojny: znacznik wojny +${mw.length}.`:"",cw.length?`Kolonia z ikoną wojny: znacznik wojny +${cw.length}.`:"",`Pierwszy gracz: ${seatName(seats[first])}.`].filter(Boolean),sub,evImg(ev&&g.cards[ev]));
     annAdd(t,"Dyplomacja",[],sub); }
   Act.commit(t.patch,t.before,msg);
 }
@@ -1771,7 +1774,8 @@ function renderCD(){
     if(st.phase==="bid"){
       body+=`<p><b>Najwyższa oferta: ${st.high||"brak"}</b>${st.hs?` (${esc(seatName(st.hs))})`:""}. Teraz: ${st.turn?`${swatch(st.turn)} <b>${esc(seatName(st.turn))}</b>`:"—"}</p>`;
       if(st.turn===S.me){ const res=g.players[S.me].res||{};
-        body+=`<div class="row"><label>Twoja oferta <input type="number" id="cBid" min="${st.high+1}" max="${colMax(S.me)}" value="${Math.min(st.high+1,colMax(S.me))}"></label><button class="btn primary" id="cBidB">Licytuj</button><button class="btn" id="cPass">Pas</button></div>
+        const cmH=(g.players[S.me].colMod||0);
+        body+=(cmH?`<p class="an" style="border:2px solid var(--brass);background:rgba(201,162,39,.12);border-radius:8px;padding:8px 10px;margin:0 0 8px"><b>Modyfikator kolonizacji +${cmH}</b> – użyj go w pierwszej kolejności. Jeśli go nie wykorzystasz w tej licytacji, przepada.</p>`:"")+`<div class="row"><label>Twoja oferta <input type="number" id="cBid" min="${st.high+1}" max="${colMax(S.me)}" value="${Math.min(st.high+1,colMax(S.me))}"${cmH?` style="outline:3px solid var(--brass)"`:""}></label><button class="btn primary" id="cBidB">Licytuj</button><button class="btn" id="cPass">Pas</button></div>
         <p class="an">Masz ${res.i||0} wpływów, ${res.g||0} złota${res.h?` i ${res.h} chwały (joker)`:""}${(g.players[S.me].colMod||0)||specAvail(S.me,"col").length?` oraz modyfikatory kolonizacji`:""} – możesz zaoferować najwyżej <b>${colMax(S.me)}</b>.${colMax(S.me)<=st.high?" Nie stać Cię na przebicie – spasuj.":""}</p>`; }
       else body+=`<p class="an">Licytuje teraz inny gracz. Żeby zagrać za niego na tym komputerze, wybierz w „Grasz jako” opcję „Jeden komputer”.</p>`;
     } else if(st.phase==="pay"){
@@ -2014,7 +2018,7 @@ function freeDiscs(s,patch){ const cards=ownedCards(s).map(id=>cardRect(S.g.card
   return Object.keys(S.g.pieces).filter(id=>{ const p=S.g.pieces[id]; return p&&p.k==="disc"&&p.s===s&&(!p.gone||p.dw)&&!(patch&&patch.pieces[id])&&(p.dw||!cards.some(R=>inR(p.x,p.y,R))); }); }
 function buildStage(t,s,W){
   const c=S.g.cards[W.id], k=W.built, d=freeDiscs(s,t.patch)[0];
-  if(d) t.piece(d,c.x-80+k*80,c.y+118,{gone:false,dw:null}); else t.note("brak wolnego krążka");
+  if(d) t.piece(d,c.x+66,c.y-44+k*44,{gone:false,dw:null}); else t.note("brak wolnego krążka");
   t.patch.players[s].wb={...(t.patch.players[s].wb||{}),[W.id]:k+1}; t.before.players[s].wb={...(t.before.players[s].wb||{}),[W.id]:k};
   if(k+1>=W.st.length){ const nDone=doneWonders(s).length;
     /* cud ukończony: krążki etapów schodzą z karty (są już niepotrzebne) i wracają do puli gracza */
@@ -2064,6 +2068,7 @@ function txWar(t,d){ let v=("warLv" in t.patch)?t.patch.warLv:warOf(); for(let k
 /* ===== karta wydarzenia: część B (dla wszystkich) i D (modyfikator rundy) ===== */
 function curEventCard(){ for(const id in S.g.cards){ const c=S.g.cards[id]; if(c&&/^ev/.test(c.k)&&c.z==="table"&&inRect(c,RC_RECT)) return c; } return null; }
 const curEventN=()=>{ const c=curEventCard(); return c?c.n:null; };
+const evImg=c=>c&&c.k&&c.n?faceSrc(c.k,c.n):null;
 const curEventName=()=>{ const n=curEventN(); return n&&EVENTS[n]?EVENTS[n][0]:""; };
 const EVALL={1:{pop:1,t:"darmowa populacja"},3:{evSend:2,t:"każdy może wysłać wolnego robotnika na technologię cywilną o 2 kamienie taniej"},5:{car:1,t:"ruch karawany"},7:{car:1,t:"ruch karawany"},9:{res:{e:-1},t:"−1 energia"},
   11:{res:{e:2},t:"+2 energie"},13:{car:1,t:"ruch karawany"},15:{res:{s:2},t:"+2 kamienie"},17:{t:"wszystkie pakty anulowane"},19:{loseImp:1,t:"każdy traci kartę imperialną (kto nie ma: −3 kultury)"},
@@ -2148,8 +2153,8 @@ function nextPhaseName(g){ const r=roundOf(g), L=phasesFor(r), i=L.findIndex(p=>
 /* ===== komunikaty faz: napis w płomieniach u każdego gracza + okno podsumowania ===== */
 let ANNSEQ=0;
 const phaseSub=()=>{ const r=roundOf(S.g); return `${r===7?"Epic":"Era "+ERA_PL[eraOfRound(r)]} · runda ${r}`; };
-function annAdd(t,title,lines,sub){ const g=S.g, id=Date.now()+"_"+String(ANNSEQ++%1000).padStart(3,"0");
-  t.patch.ann={...(t.patch.ann||{}),[id]:{t:Date.now(),ti:title,sub:sub||phaseSub(),l:(lines||[]).filter(Boolean)}}; t.before.ann={...(t.before.ann||{}),[id]:null};
+function annAdd(t,title,lines,sub,img){ const g=S.g, id=Date.now()+"_"+String(ANNSEQ++%1000).padStart(3,"0");
+  t.patch.ann={...(t.patch.ann||{}),[id]:{t:Date.now(),ti:title,sub:sub||phaseSub(),l:(lines||[]).filter(Boolean),img:img||null}}; t.before.ann={...(t.before.ann||{}),[id]:null};
   const old=Object.keys(g.ann||{}).filter(k=>g.ann[k]).sort(); if(old.length>14) old.slice(0,old.length-14).forEach(k=>{ t.patch.ann[k]=null; t.before.ann[k]=g.ann[k]; }); return t; }
 function colLine(st){ const g=S.g; if(!st||(!st.c1&&!st.c2)) return "W tej rundzie nie ma kart do licytacji.";
   const nm=id=>id&&g.cards[id]?cardName(g.cards[id]):""; return `Licytacja: ${[nm(st.c1),nm(st.c2)].filter(Boolean).join(" i ")}. Zaczyna ${seatName(st.turn||seatOrderFrom(g.first)[0])}.`; }
@@ -2170,7 +2175,7 @@ function showBanner(title,sub,done){ let el=document.getElementById("phban"); if
   el.classList.remove("go"); void el.offsetWidth; el.hidden=false; el.classList.add("go");
   clearTimeout(el._t); el._t=setTimeout(()=>{ el.hidden=true; el.classList.remove("go"); if(done) done(); },2700); }
 function showSummary(a,done){ const el=dlg("sumdlg","Podsumowanie fazy");
-  el.innerHTML=`<header><div><h3>${esc(a.ti)}</h3><p class="an">${esc(a.sub||"")}</p></div></header><ul class="sumlist">${a.l.map(x=>`<li>${esc(x)}</li>`).join("")}</ul><div class="row"><button class="btn primary" id="sumOk">OK</button></div>`;
+  el.innerHTML=`<header><div><h3>${esc(a.ti)}</h3><p class="an">${esc(a.sub||"")}</p></div></header><div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">${a.img?`<img src="${a.img}" alt="Karta wydarzenia" style="width:150px;max-width:40%;border-radius:8px;flex:0 0 auto">`:""}<ul class="sumlist" style="flex:1 1 220px;margin:0">${a.l.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div><div class="row"><button class="btn primary" id="sumOk">OK</button></div>`;
   el.hidden=false; const b=el.querySelector("#sumOk"); b.onclick=()=>{ el.hidden=true; done(); }; b.focus(); }
 
 /* ===== przejścia faz i fazy automatyczne (wykonuje je komputer, który zrobił ostatni ruch) ===== */
@@ -2278,7 +2283,7 @@ function renderGens(){ const W=document.getElementById("world"); if(!W) return; 
     if(c.gu) h+=`<div class="gused" style="left:${R[0]}px;top:${R[1]}px;width:${R[2]-R[0]}px;height:${R[3]-R[1]}px"><span>zużyta</span></div>`;
     else { const s=seatsInPlay(S.g).find(x=>ownedCards(x).includes(id)); if(s&&phaseOf(S.g)==="act"&&S.g.turn===s&&c.gb!==S.g.turnT&&(S.g.guildT||{})[s]!==S.g.turnT) h+=`<div class="gready" style="left:${R[0]-6}px;top:${R[1]-6}px;width:${R[2]-R[0]+12}px;height:${R[3]-R[1]+12}px"></div>`; } }
   const U=S.g.spUsed||{}; for(const id in U){ const s=U[id], c=S.g.cards[id]; if(!s||!c||c.z!=="table") continue; const R=cardRect(c);
-    h+=`<div class="genm spu" style="left:${R[0]+12}px;top:${R[1]+12}px;background:${SEAT_COL[s]}" title="Właściwość karty wykorzystana"></div>`; }
+    const k=c.sc||1; h+=`<div class="genm spu" style="left:${c.x+14*k-14}px;top:${c.y+61*k-14}px;background:${SEAT_COL[s]}" title="Właściwość karty wykorzystana"></div>`; }
   if(c.innerHTML!==h) c.innerHTML=h; }
 /* ===== rezerwacja: karta z rynku albo pole akcji należy do gracza do końca rundy ===== */
 const rezOf=()=>S.g.rez||{};
@@ -2286,7 +2291,7 @@ function rezCardBy(id){ const R=rezOf(); return Object.keys(R).find(s=>R[s]&&R[s
 function rezFieldBy(k){ if(k==="dip"||k==="tra") return null; const R=rezOf(); return Object.keys(R).find(s=>R[s]&&R[s].field===k)||null; }
 function openRez(pid,p){ const el=dlg("rezdlg","Rezerwacja"), s=p.s;
   /* zajęte są tylko karty i pola zarezerwowane wcześniej przez innych graczy */
-  const M=marketCards(), F=Object.keys(FIELDS), oth=o=>o&&o!==s?o:null;
+  const M=marketCards(), F=Object.keys(FIELDS).filter(k=>k!=="ws"), oth=o=>o&&o!==s?o:null;
   el.innerHTML=`<header><div><h3>Rezerwacja</h3><p class="an">${swatch(s)} ${esc(seatName(s))}: wybierz 1 kartę z rynku albo 1 pole akcji. Do końca rundy nikt inny nie może jej kupić ani go zająć.</p></div><button class="btn" id="rzX" title="Zamknij bez rezerwacji">Zamknij</button></header>
     <h4 style="margin:0">Karta z rynku</h4><div class="rzg">${[2,1,0].map(row=>`<div class="mg"><div class="mgl">${3-row} ${row===2?"złoto":"złota"}${row===0?" + karta imperialna":""}</div><div class="rzm">${M.filter(m=>m.row===row).map(m=>{ const o=oth(rezCardBy(m.id)); return `<button class="mcs ${o?"off":"on"}" ${o?"disabled":`data-rz="c|${m.id}"`} title="${esc((TECH[m.c.n]||{}).nm||"")} – ${m.price} zł${o?` · zarezerwowana przez: ${esc(seatName(o))}`:""}"><img src="${faceSrc(m.c.k,m.c.n)}" alt="" data-pv="${m.c.k}|${m.c.n}"></button>`; }).join("")}</div></div>`).join("")}</div>
     <h4 style="margin:0">Pole akcji</h4><div class="row" style="flex-wrap:wrap">${F.flatMap(k=>{ const n=seatsInPlay(S.g).length;
@@ -2303,6 +2308,14 @@ function openRez(pid,p){ const el=dlg("rezdlg","Rezerwacja"), s=p.s;
   el.querySelectorAll("[data-rz]").forEach(b=>b.onclick=()=>{ const [k,v,i]=b.dataset.rz.split("|"); const sl=i===undefined?0:+i;
     fin(k==="c"?{card:v}:{field:v,slot:sl}, k==="c"?`kartę „${(TECH[S.g.cards[v].n]||{}).nm||"z rynku"}”`:`pole „${FIELDS[v].n}”${v==="tra"?` (rząd ${sl+1}: ${TRA_NM[sl]})`:v==="dip"?` (${sl+1}. miejsce)`:""}`); });
   el.querySelectorAll("[data-pv]").forEach(i=>{ const [k,n]=i.dataset.pv.split("|"); i.onmouseenter=()=>UI.preview(faceSrc(k,n)); i.onmouseleave=()=>UI.preview(null); }); }
+/* limit kart imperialnych na ręce: wybór karty do odrzucenia (na spód talii) */
+function openDiscI(id,p){ const el=dlg("discdlg","Limit kart imperialnych"), s=p.s, lim=impLimit(levelOf(s,"i"));
+  const H=Object.keys(S.g.cards).filter(k=>{ const c=S.g.cards[k]; return c.k==="imp"&&c.z==="hand"&&c.o===s; });
+  el.innerHTML=`<header><div><h3>Limit kart imperialnych</h3><p class="an">${swatch(s)} ${esc(seatName(s))}: na ręce jest ${H.length} karty, a limit to ${lim}. Wybierz kartę, którą odrzucasz. Trafi na spód talii.</p></div></header><div class="row" style="flex-wrap:wrap">${H.map(k=>`<button class="btn" data-dc="${k}" style="display:flex;flex-direction:column;align-items:center"><img src="${faceSrc("imp",S.g.cards[k].n)}" alt="" style="height:140px"><span>${esc((TECH[S.g.cards[k].n]||{}).nm||S.g.cards[k].n)}</span></button>`).join("")}</div>`;
+  el.hidden=false;
+  el.querySelectorAll("[data-dc]").forEach(b=>b.onclick=()=>{ const cid=b.dataset.dc; const ps=Act.deckCards("imp").map(i=>S.g.cards[i].p); const low=ps.length?Math.min(...ps):0;
+    const t=tx(s); t.card(cid,{z:"deck",o:null,f:false,p:low-1}); t.patch.pend={[id]:null}; t.before.pend={[id]:p}; el.hidden=true;
+    t.go(`odrzuca kartę imperialną „${(TECH[S.g.cards[cid].n]||{}).nm||""}” (na spód talii)`); }); }
 /* znaczniki rezerwacji na planszy głównej */
 function renderRez(){ const W=document.getElementById("world"); if(!W) return; let c=document.getElementById("rezs"); if(!c){ c=document.createElement("div"); c.id="rezs"; W.appendChild(c); }
   const R=rezOf(); let h="";
@@ -2401,7 +2414,7 @@ function doCompare(){ const g=S.g, C=EVCMP[curEventN()]||[], lines=[];
     lines.push(`${i+1}. ${bw==="b"?"Najlepsza":"Najgorsza"} ${CAT_PL[cat]} → ${cmpText(R)}. ${res.join("; ")}.`); });
   if(!C.length) lines.push("Ta karta nie ma wydarzeń porównawczych.");
   if(C.length) lines.push("Remisy: produkcja wpływów, siła, produkcja energii, kultury, kamienia, złota.");
-  annAdd(t,"Wydarzenia",[`„${curEventName()}”`,...lines]);
+  annAdd(t,"Wydarzenia",[`„${curEventName()}”`,...lines],undefined,evImg(curEventCard()));
   annAdd(t,"Kolonizacja",[colLine(g.col)]);
   Act.commit(t.patch,t.before,"wydarzenia porównawcze: "+lines.join(" ")); }
 /* status wojny: konflikt, gdy znacznik doszedł do pola 4 (także gdy przeszedł dalej na pole 1) */
@@ -2427,6 +2440,7 @@ function pendCheck(){ const g=S.g; if(!g||annBusy()) return; const P=g.pend||{};
     if(p.k==="upg"){ if(UP.open) return; PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openUpgrade(p.s,p.n,"Nagroda z wydarzenia",null,id); return; }
     if(p.k==="acad"){ PD.shown[id]=1; if(!genOptions(p.s).length){ pendDone(id); return; } if(S.auto){ S.me=p.s; S.pv=p.s; } openAcad(id,p); return; }
     if(p.k==="pex"){ PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openPex(id,p); return; }
+    if(p.k==="discI"){ PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openDiscI(id,p); return; }
     if(p.k==="rez"){ PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openRez(id,p); return; }
     if(p.k==="war1"){ PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } const el=dlg("war1dlg","Nagroda za wojnę");
       el.innerHTML=`<header><div><h3>Wojna – 1. miejsce</h3><p class="an">${swatch(p.s)} ${esc(seatName(p.s))}: wybierz nagrodę.</p></div></header><div class="row"><button class="btn" id="w1X" title="Zamknij – okno wróci przy następnym ruchu">Zamknij</button><button class="btn primary" data-w1="imp">Karta imperialna</button><button class="btn primary" data-w1="dip">Ruch na torze dyplomacji</button><button class="btn primary" data-w1="h">Chwała</button></div>`;
@@ -2464,13 +2478,16 @@ function endTurn(){ const g=S.g, s=g.turn; if(!s) return; const o=turnOrder(g), 
 function turnEntries(g){ const log=g.log||{}; return Object.keys(log).filter(k=>log[k]&&log[k].b&&log[k].t>=(g.turnT||0)).sort(); }
 function undoTurn(){ const g=S.g; let k=0; while(turnEntries(S.g).length&&k<60){ Act.undo(); k++; }
   closeAD(); UI.toast(k?`Cofnięto cały ruch (${k} ${k===1?"krok":k<5?"kroki":"kroków"}).`:"W tym ruchu nie ma jeszcze nic do cofnięcia."); }
+/* „Koniec ruchu” dopiero po wykonaniu ruchu w fazie akcji (pionek, gildia); samo czekanie nie wystarcza */
+function movedInTurn(g){ const log=g.log||{}; return turnEntries(g).some(k=>log[k]&&log[k].s===g.turn&&!/^pasuje/.test(log[k].m||"")); }
 function renderTurn(g){
   const bar=document.getElementById("turnbar"), seats=seatsInPlay(g), ph=phaseOf(g), on=TURN_PHASES.includes(ph)&&g.turn;
-  const sig=JSON.stringify([g.turn,ph,S.me,S.auto,seats.map(x=>g.players[x].name)]);
+  const moved=ph==="act"?movedInTurn(g):true;
+  const sig=JSON.stringify([g.turn,ph,S.me,S.auto,moved,seats.map(x=>g.players[x].name)]);
   if(bar&&bar._sig!==sig){ bar._sig=sig;
     bar.className="turnbar"+(on&&g.turn===S.me?" mine":"");
     const can=on&&(S.auto||S.me===g.turn);
-    bar.innerHTML= on? `<span class="who">${swatch(g.turn)}Aktywny gracz: ${esc(seatName(g.turn))}</span>${can?`<button class="btn primary" id="tEnd" title="Kończy ruch tego gracza; kolejka przechodzi na następnego">Koniec ruchu ▸</button>${ph==="act"?`<button class="btn" id="tPass" title="Kończy akcje tego gracza w tej rundzie – kolejka go pomija">Pas</button>`:""}`:""}` : "";
+    bar.innerHTML= on? `<span class="who">${swatch(g.turn)}Aktywny gracz: ${esc(seatName(g.turn))}</span>${can&&moved?`<button class="btn primary" id="tEnd" title="Kończy ruch tego gracza; kolejka przechodzi na następnego">Koniec ruchu ▸</button>`:""}${(S.auto||S.me===g.turn)&&ph==="act"?`<button class="btn" id="tPass" title="Kończy akcje tego gracza w tej rundzie – kolejka go pomija">Pas</button>`:""}` : "";
     const te=bar.querySelector("#tEnd"); if(te) te.onclick=()=>{ closeAD(); endTurn(); Cam.preset("main"); };
     const tp=bar.querySelector("#tPass"); if(tp) tp.onclick=()=>{ closeAD(); passTurn(); Cam.preset("main"); }; }
   document.querySelectorAll(".tab[data-seat]").forEach(b=>b.classList.toggle("turn",!!on&&b.dataset.seat===g.turn));
@@ -2626,6 +2643,7 @@ function playKI(){ const s=KP.seat, id=KP.id, c=S.g.cards[id], K=KI[c.n]||{dip:[
   if(pact&&(!sel.partner||sel.side===undefined)){ UI.toast("Wybierz partnera paktu i swoją stronę."); return; }
   const t=tx(s), [x,y]=playSpot(s), done=[]; let after=null;
   t.card(id,{z:"table",o:null,f:true,x:Math.round(x),y:Math.round(y),pl:s,ph:KP.ph,r:Act.maxZ()+1});
+  if(!dip) t.top("kiUse",{[s]:S.g.turnT||1},{[s]:(S.g.kiUse||{})[s]||null});
   if(dip){
     txDip(t,s,1); done.push("tor dyplomacji");
     K.dip.forEach(o=>{
@@ -2928,8 +2946,9 @@ const Table = {
   },
   renderHand(){
     const g=S.g, box=document.getElementById("handcards"); if(!box) return;
-    const ids=Object.keys(g.cards).filter(id=>{ const c=g.cards[id]; return c&&c.z==="hand"&&c.o===S.me; }).sort((a,b)=>g.cards[a].k.localeCompare(g.cards[b].k)||g.cards[a].n-g.cards[b].n);
-    const sig=ids.join(",")+"|"+S.me;
+    const HS=S.auto?(S.pv||S.me):S.me; /* gra admina: ręka zmienia się z widokiem; zwykła gra: zawsze własna */
+    const ids=Object.keys(g.cards).filter(id=>{ const c=g.cards[id]; return c&&c.z==="hand"&&c.o===HS; }).sort((a,b)=>g.cards[a].k.localeCompare(g.cards[b].k)||g.cards[a].n-g.cards[b].n);
+    const sig=ids.join(",")+"|"+HS;
     const kiOn=AD.open&&phaseOf(g)==="act"&&AD.seat===S.me&&((g.pieces[AD.pawn]&&g.pieces[AD.pawn].k==="amb")||AD.k==="gld");
     const cls=()=>box.querySelectorAll(".hc").forEach(el=>{ const c=g.cards[el.dataset.hid]; el.classList.toggle("kion",!!(kiOn&&c&&c.k==="imp")); el.classList.toggle("kisel",AD.ki===el.dataset.hid); });
     if(box._sig===sig){ cls(); return; } box._sig=sig;
