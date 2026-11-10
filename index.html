@@ -2476,6 +2476,8 @@ function endTurn(){ const g=S.g, s=g.turn; if(!s) return; const o=turnOrder(g), 
     Act.commit(patch,before,"kończy ruch. Wszyscy spasowali albo nie mają pionków – faza: Produkcja.",s); return; }
   patch.turn=nx; Act.commit(patch,before,`kończy ruch. Teraz: ${seatName(nx)}${pawnsLeft(g,nx)?` (pionki: ${pawnsLeft(g,nx)})`:""}.`,s); }
 function turnEntries(g){ const log=g.log||{}; return Object.keys(log).filter(k=>log[k]&&log[k].b&&log[k].t>=(g.turnT||0)).sort(); }
+/* w fazie akcji „Cofnij” cofa cały ruch gracza; w innych fazach – ostatni krok */
+function undoAny(){ if(phaseOf(S.g)==="act"){ if(turnEntries(S.g).length) undoTurn(); else UI.toast("W tym ruchu nie ma jeszcze nic do cofnięcia."); } else Act.undo(); }
 function undoTurn(){ const g=S.g; let k=0; while(turnEntries(S.g).length&&k<60){ Act.undo(); k++; }
   closeAD(); UI.toast(k?`Cofnięto cały ruch (${k} ${k===1?"krok":k<5?"kroki":"kroków"}).`:"W tym ruchu nie ma jeszcze nic do cofnięcia."); }
 /* „Koniec ruchu” dopiero po wykonaniu ruchu w fazie akcji (pionek, gildia); samo czekanie nie wystarcza */
@@ -2483,13 +2485,15 @@ function movedInTurn(g){ const log=g.log||{}; return turnEntries(g).some(k=>log[
 function renderTurn(g){
   const bar=document.getElementById("turnbar"), seats=seatsInPlay(g), ph=phaseOf(g), on=TURN_PHASES.includes(ph)&&g.turn;
   const moved=ph==="act"?movedInTurn(g):true;
-  const sig=JSON.stringify([g.turn,ph,S.me,S.auto,moved,seats.map(x=>g.players[x].name)]);
+  const hasUndo=ph==="act"&&turnEntries(g).length>0;
+  const sig=JSON.stringify([g.turn,ph,S.me,S.auto,moved,hasUndo,seats.map(x=>g.players[x].name)]);
   if(bar&&bar._sig!==sig){ bar._sig=sig;
     bar.className="turnbar"+(on&&g.turn===S.me?" mine":"");
     const can=on&&(S.auto||S.me===g.turn);
-    bar.innerHTML= on? `<span class="who">${swatch(g.turn)}Aktywny gracz: ${esc(seatName(g.turn))}</span>${can&&moved?(ph==="dip"?`<button class="btn primary" id="tEnd" title="Kończy Twoją fazę dyplomacji w tej rundzie – nie oznacza spasowania w całej rundzie">Pas ▸</button>`:`<button class="btn primary" id="tEnd" title="Kończy ruch tego gracza; kolejka przechodzi na następnego">Koniec ruchu ▸</button>`):""}${(S.auto||S.me===g.turn)&&ph==="act"?`<button class="btn" id="tPass" title="Kończy akcje tego gracza w tej rundzie – kolejka go pomija">Pas</button>`:""}` : "";
+    bar.innerHTML= on? `<span class="who">${swatch(g.turn)}Aktywny gracz: ${esc(seatName(g.turn))}</span>${can&&moved?(ph==="dip"?`<button class="btn primary" id="tEnd" title="Kończy Twoją fazę dyplomacji w tej rundzie – nie oznacza spasowania w całej rundzie">Pas ▸</button>`:`<button class="btn primary" id="tEnd" title="Kończy ruch tego gracza; kolejka przechodzi na następnego">Koniec ruchu ▸</button>`):""}${(S.auto||S.me===g.turn)&&hasUndo?`<button class="btn" id="tUndo" title="Cofa cały ruch tego gracza do początku jego tury akcji">Cofnij ruch</button>`:""}${(S.auto||S.me===g.turn)&&ph==="act"?`<button class="btn" id="tPass" title="Kończy akcje tego gracza w tej rundzie – kolejka go pomija">Pas</button>`:""}` : "";
     const te=bar.querySelector("#tEnd"); if(te) te.onclick=()=>{ closeAD(); endTurn(); Cam.preset("main"); };
-    const tp=bar.querySelector("#tPass"); if(tp) tp.onclick=()=>{ closeAD(); passTurn(); Cam.preset("main"); }; }
+    const tp=bar.querySelector("#tPass"); if(tp) tp.onclick=()=>{ closeAD(); passTurn(); Cam.preset("main"); };
+    const tu=bar.querySelector("#tUndo"); if(tu) tu.onclick=()=>undoTurn(); }
   document.querySelectorAll(".tab[data-seat]").forEach(b=>b.classList.toggle("turn",!!on&&b.dataset.seat===g.turn));
   document.querySelectorAll("[data-tray]").forEach(t=>t.classList.toggle("turn",!!on&&t.dataset.tray===g.turn));
   { const o=turnOrder(g); document.querySelectorAll(".tab[data-seat]").forEach(b=>{ const i=o.indexOf(b.dataset.seat); b.style.order=i+1; const n=b.querySelector(".tno"); if(n&&n.textContent!==`${i+1}.`) n.textContent=`${i+1}.`; b.title=`${i+1}. w kolejności${i===0?" (pierwszy gracz)":""}`; }); }
@@ -2814,12 +2818,12 @@ const Table = {
       /* zakładka gracza: plansza tego gracza + jego panel produkcji */
       if(b.dataset.view==="main"&&S.g.turn){ S.pv=S.g.turn; const box=document.getElementById("players"); if(box) box._sig=null; this.renderSide(); }
       if(b.dataset.seat){ S.pv=b.dataset.seat; const box=document.getElementById("players"); if(box) box._sig=null; const sd=document.getElementById("side"); if(sd) sd.classList.remove("hidden"); this.renderSide(); } });
-    document.getElementById("undo2").onclick=()=>Act.undo();
+    document.getElementById("undo2").onclick=()=>undoAny();
     document.getElementById("rNext").onclick=()=>nextPhase();
     document.getElementById("fitB").onclick=()=>Cam.preset(S.viewName||"main");
     document.getElementById("zin").onclick=()=>Cam.zoomAt(innerWidth/2,innerHeight/2,1.25);
     document.getElementById("zout").onclick=()=>Cam.zoomAt(innerWidth/2,innerHeight/2,0.8);
-    document.getElementById("undo").onclick=()=>Act.undo();
+    document.getElementById("undo").onclick=()=>undoAny();
     document.getElementById("sideT").onclick=()=>{ document.getElementById("side").classList.toggle("hidden"); };
     document.getElementById("helpB").onclick=()=>{ const h=document.getElementById("help"); h.style.display="flex"; document.getElementById("helpClose").focus(); };
     document.getElementById("leave").onclick=()=>{ location.hash=""; showStart(); };
@@ -3002,7 +3006,7 @@ function bindViewport(){
   vp.addEventListener("contextmenu",e=>e.preventDefault());
   if(!resizeBound){ resizeBound=true; addEventListener("keydown",e=>{ if(!document.getElementById("viewport")||e.target.closest("input,select")) return;
     if(e.key==="+"||e.key==="=") Cam.zoomAt(innerWidth/2,innerHeight/2,1.2); if(e.key==="-") Cam.zoomAt(innerWidth/2,innerHeight/2,1/1.2);
-    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){ e.preventDefault(); Act.undo(); } }); }
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){ e.preventDefault(); undoAny(); } }); }
 }
 function tabAt(cx,cy){ for(const b of document.querySelectorAll("[data-view]")){ const r=b.getBoundingClientRect(); if(cx>=r.left&&cx<=r.right&&cy>=r.top&&cy<=r.bottom) return b.dataset.view; } return null; }
 function cardAreaSpot(i){
