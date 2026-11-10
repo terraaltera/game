@@ -1083,7 +1083,9 @@ function tx(seat,base){
   t.top=(key,val,old)=>{ t.patch[key]={...(t.patch[key]||{}),...val}; t.before[key]={...(old||{}),...(t.before[key]||{})}; return t; };
   t.pl=(key,val)=>{ if(!(key in t.before.players[seat])){ const o=S.g.players[seat][key]; t.before.players[seat][key]= o===undefined?null:JSON.parse(JSON.stringify(o)); } t.patch.players[seat][key]=val; return t; };
   t.note=s=>{ t.notes=(t.notes||[]).concat(s); return t; };
-  t.go=msg=>{ Act.commit(t.patch,t.before,msg+(t.notes&&t.notes.length?" · "+t.notes.join(", "):""),seat); if(t.pick){ if(seat===S.me) openPick(seat,t.pick.n,t.pick.why); else UI.toast(`${seatName(seat)} wybiera ${t.pick.n} dowolnych zasobów.`); }
+  t.go=msg=>{ Act.commit(t.patch,t.before,msg+(t.notes&&t.notes.length?" · "+t.notes.join(", "):""),seat);
+    /* zapamiętane kliknięcie robotnika na planszy dotyczy tylko tego jednego ruchu – po innej akcji (np. odkryciu) nie może zamienić budowy w przeniesienie */
+    AD.src=null; if(t.pick){ if(seat===S.me) openPick(seat,t.pick.n,t.pick.why); else UI.toast(`${seatName(seat)} wybiera ${t.pick.n} dowolnych zasobów.`); }
     if(t.upg){ if(seat===S.me||S.auto) openUpgrade(seat,t.upg,t.upgT?(t.upgT.card?"bonus upgrade z kupionej technologii":"bonus upgrade z odkrytego terytorium"):"bonus upgrade",t.upgT); }
     if(t.warTo!==undefined&&!t.limitHit&&!t.pick&&!t.upg) UI.toast(`Ikona wojny: znacznik wojny przesunięty na pole ${t.warTo}${t.warTo===4?" – w fazie statusu wojny będzie konflikt!":""}.`);
     else if(t.limitHit) UI.toast(`Limit kart imperialnych na ręce: ${t.limitHit}. Karty nie dobrano.`);
