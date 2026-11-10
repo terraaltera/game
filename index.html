@@ -1498,7 +1498,7 @@ function renderTargets(){ const W=document.getElementById("world"); if(!W) retur
   for(const k in TG){ const T=TG[k]; if(!T.r||!T.e.some(e=>!e.lack.length)) continue; const [a,b,x,y]=T.r;
     h+=`<div class="tgt" data-tk="${k}" ${T.img?`data-pvs="${T.img}"`:""} style="left:${a}px;top:${b}px;width:${x-a}px;height:${y-b}px" title="${esc(T.nm||"")}"></div>`; }
   if(AD.needW) srcWorkers(AD.seat).forEach(id=>{ const p=S.g.pieces[id];
-    h+=`<div class="tgt src ${AD.src===id?"sel":""}" data-tk="src:${id}" style="left:${p.x-36}px;top:${p.y-36}px;width:72px;height:72px" title="Przenieś tego robotnika (${esc(workerHome(AD.seat,id).nm)})"></div>`; });
+    h+=`<div class="tgt src ${AD.src===id?"sel":""}" data-tk="src:${id}" style="left:${p.x-22}px;top:${p.y-26}px;width:44px;height:44px" title="Przenieś tego robotnika (${esc(workerHome(AD.seat,id).nm)})"></div>`; });
   c.innerHTML=h; }
 function tgClick(k){ if(k.indexOf("src:")===0){ const id=k.slice(4); AD.src=AD.src===id?null:id; renderAD(); return; } openCF(k); }
 /* okno potwierdzenia: podgląd karty, wszystkie warianty z kosztem po zniżkach i bilansem */
