@@ -307,6 +307,7 @@ input[type=text]{background:#0f1317;border:1px solid var(--line);border-radius:6
 .ckl{font-size:12px;color:#9aa3ad;margin-right:6px;align-self:center}
 .hico{width:52px;height:52px;flex:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
 .ao .al{display:inline-flex;align-items:center;gap:2px}
+.bonused{position:absolute;width:40px;height:40px;border-radius:50%;background:rgba(235,235,235,.45);backdrop-filter:grayscale(1) brightness(.75);-webkit-backdrop-filter:grayscale(1) brightness(.75);pointer-events:auto}
 .goalm{position:absolute;width:30px;height:30px;border-radius:4px;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.6)}
 .slotoff{position:absolute;width:54px;height:54px;border-radius:50%;background:rgba(20,20,20,.78);box-shadow:0 0 0 3px rgba(0,0,0,.5)}
 .slotoff::before,.slotoff::after{content:"";position:absolute;left:24px;top:8px;width:6px;height:38px;background:#c9c2b4;border-radius:3px;transform:rotate(45deg)}
@@ -2544,6 +2545,9 @@ function renderGens(){ const W=document.getElementById("world"); if(!W) return; 
   for(const id in S.g.cards){ const c=S.g.cards[id]; if(!c||c.z!=="table"||!GUILD[c.n]||!/^era/.test(c.k)||inMarket(c)) continue; const R=cardRect(c);
     if(c.gu) h+=`<div class="gused" style="left:${R[0]}px;top:${R[1]}px;width:${R[2]-R[0]}px;height:${R[3]-R[1]}px"><span>zużyta</span></div>`;
     else { const s=seatsInPlay(S.g).find(x=>ownedCards(x).includes(id)); if(s&&phaseOf(S.g)==="act"&&S.g.turn===s&&c.gb!==S.g.turnT&&(S.g.guildT||{})[s]!==S.g.turnT) h+=`<div class="gready" style="left:${R[0]-6}px;top:${R[1]-6}px;width:${R[2]-R[0]+12}px;height:${R[3]-R[1]+12}px"></div>`; } }
+  /* premie na torze produkcji już wykorzystane – wyszarzone (każda działa raz w grze) */
+  seatsInPlay(S.g).forEach(s=>{ const B=(S.g.players[s]||{}).bon||{}; for(const r in B){ if(!B[r]||!PROD_BONUS[r]) continue; const at=PROD_BONUS[r].at, [x1,y1]=levelPos(s,r,at-1), [x2,y2]=levelPos(s,r,at);
+    h+=`<div class="bonused" style="left:${Math.round((x1+x2)/2)-19}px;top:${Math.round((y1+y2)/2)-19}px" title="Premia już wykorzystana: ${esc(PROD_BONUS[r].txt)}"></div>`; } });
   { const GL=S.g.goals||{}; for(const k in GL){ const m=GL[k]||{}; for(const s in m){ if(!m[s]||!GOAL_X[s]) continue;
     h+=`<div class="goalm" style="left:${GOAL_X[s]-15}px;top:${GOAL_Y[k]-15}px;background:${SEAT_COL[s]}" title="${esc(seatName(s))}: cel publiczny (${m[s]}. gracz)"></div>`; } } }
   const U=S.g.spUsed||{}; for(const id in U){ const s=U[id], c=S.g.cards[id]; if(!s||!c||c.z!=="table") continue; const R=cardRect(c);
