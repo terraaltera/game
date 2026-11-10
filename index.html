@@ -206,7 +206,7 @@ input[type=text]{background:#0f1317;border:1px solid var(--line);border-radius:6
 .mcap{font-family:var(--f-display);font-size:30px;color:var(--brass-2)}
 .mcap span{font-family:var(--f-body);font-size:22px;color:var(--ink-2)}
 .dlg{position:fixed;left:50%;top:96px;transform:translateX(-50%);width:min(760px,calc(100vw - 24px));max-height:calc(100vh - 120px);overflow:auto;z-index:66;background:var(--panel);border:1px solid var(--brass);border-radius:12px;box-shadow:0 18px 44px rgba(0,0,0,.7);padding:14px;display:flex;flex-direction:column;gap:10px}
-.dlg header{display:flex;justify-content:space-between;gap:10px;cursor:move}
+.dlg header{display:flex;justify-content:space-between;gap:10px;cursor:move;user-select:none}
 .mntab{margin-top:4px;font-size:13px;border-collapse:collapse;width:100%}.mntab td{padding:1px 4px}.mntab td:last-child{text-align:right;font-weight:700}.mntab tr.me{color:#f0d68a}.mntab td.mpt{color:#c9b3ff;padding-left:8px}
 .dlg h3{cursor:move}
 .dlg h3{font-size:22px;color:var(--brass-2)}
@@ -1491,7 +1491,7 @@ function renderAD(){
         if(!AD.ws.length){ const t=tx(s); t.top("wsUse",{[s]:uses+1},{[s]:uses}); t.go(`korzysta z Warsztatów (${uses+1}. raz)`); } AD.ws.push(x);
         /* A: dowolna akcja główna od razu aktywna – podświetlają się wszystkie możliwe miejsca i karty */
         if(x==="A"&&!AD.used.wsA){ AD.sub=(AD.sub||0)+1; AD.used.wsA=true; } };
-      body=sec(`Wybierz 2 z 5 akcji · użycia Warsztatów: ${uses} z 3`,L.map(([x,l])=>{ if(AD.ws.length>=2&&!AD.ws.includes(x)) return ""; const i=AH.length; AH.push(()=>{ pick(x); renderAD(); }); return `<button class="btn wsb" aria-pressed="${AD.ws.includes(x)}" data-h="${i}" ${uses>=3&&!AD.ws.length?"disabled":""}><b>${x}</b> ${l}</button>`; }).join(""));
+      body=sec(`Wybierz 2 z 5 akcji · użycia Warsztatów: ${uses} z 3`,L.map(([x,l])=>{ if(AD.ws.length>=2&&!AD.ws.includes(x)) return ""; const i=AH.length; AH.push(()=>{ pick(x); renderAD(); }); return `<button class="btn wsb" aria-pressed="${AD.ws.includes(x)}" data-h="${i}" ${uses>=3&&!AD.ws.length?"disabled":""}>${l}</button>`; }).join(""));
       if(AD.ws.includes("A")) body+=`<div class="bsec hint"><span class="bt"><b>A:</b> ${AD.sub>0?"dowolna akcja główna – kliknij podświetlone miejsce albo kartę":"dowolna akcja główna wykonana ✓"}</span></div>`;
       if(AD.ws.includes("B")){ const lim=impLimit(levelOf(s,"i")), full=handImp(s)>=lim; body+=sec("B",AD.used.wsB?`<p class="okmsg">✓ Karta imperialna wzięta</p>`:full?`<p class="awarn">Masz już limit kart imperialnych na ręce (${lim}) – karty nie można wziąć.</p>`:opt("Weź kartę imperialną",{},t=>t.imp(),{key:"wsB",log:"bierze kartę imperialną (Warsztaty)"})); }
       const wsHint=`<div class="bsec hint"><span class="bt">Bez limitu: wysyłasz po jednym robotniku – kliknij podświetlone miejsce; po każdym miejsca podświetlą się znowu, dopóki masz kamienie i robotników (kamień: ${res.s||0}, wolni robotnicy: ${freeWorkers(s).length}).</span></div>`;
@@ -1539,9 +1539,9 @@ function renderAD(){
   const BTN_RE=/<button class="(ao[^"]*|btn[^"]*)"([^>]*?) data-h="(\d+)"([^>]*)>([\s\S]*?)<\/button>/g;
   const TRADE_PIC={"Wpływ ⇄ kamień albo energia":RK("i","1")+"⇄"+RK("s","1")+"/"+RK("e","1"),"Złoto ⇄ kamień i energia":RK("g","1")+"⇄"+RK("s","1")+RK("e","1"),
     "Złoto i wpływ → karta imperialna":RK("g","-1")+RK("i","-1")+"→"+icoHTML("crown","tico sm"),
-    "A Dowolna akcja główna":`<span class="tlab">A</span><span class="tq">?</span>`,"B Weź kartę imperialną":`<span class="tlab">B</span>`+icoHTML("crown"),
-    "C Robotnicy na technologie cywilne bez limitu":`<span class="tlab">C</span>`+icoHTML("civ")+`<span class="tlab">∞</span>`,"D Robotnicy na terytoria bez limitu":`<span class="tlab">D</span>`+icoHTML("axe")+`<span class="tlab">∞</span>`,
-    "E Robotnicy na technologie militarne lub forty bez limitu":`<span class="tlab">E</span>`+icoHTML("mil")+`<span class="tlab">∞</span>`,"Populacja bez limitu (raz na grę)":icoHTML("pop")+`<span class="tlab">∞ raz na grę</span>`};
+    "Dowolna akcja główna":`<span class="tq">?</span>`,"Weź kartę imperialną":icoHTML("crown"),
+    "Robotnicy na technologie cywilne bez limitu":icoHTML("civ")+`<span class="tlab">∞</span>`,"Robotnicy na terytoria bez limitu":icoHTML("axe")+`<span class="tlab">∞</span>`,
+    "Robotnicy na technologie militarne lub forty bez limitu":icoHTML("mil")+`<span class="tlab">∞</span>`,"Populacja bez limitu (raz na grę)":icoHTML("pop")+`<span class="tlab">∞ raz na grę</span>`};
   const fieldIcoOf=lab=>{ const f=Object.keys(FIELDS).find(f=>plain(lab).startsWith(FIELDS[f].n)); return f?FIELD_ICO[f]:""; };
   shown.forEach(G=>{ const d=disc(G.title);
     if(G.ents.length){ const vms=[...new Set(G.ents.map(e=>e.vm).filter(Boolean))];
@@ -1930,7 +1930,7 @@ function startRound(){
 /* ===== okna dialogowe (kolonizacja, barbarzyńcy) ===== */
 function dlg(id,label){ let el=document.getElementById(id); if(!el){ el=document.createElement("div"); el.id=id; el.className="dlg"; el.setAttribute("role","dialog"); el.setAttribute("aria-label",label); document.body.appendChild(el); dragDlg(el); } return el; }
 /* każde okno można przesunąć, chwytając za nagłówek (albo puste miejsce u góry okna) */
-function dragDlg(el){ el.addEventListener("pointerdown",e=>{ const hd=e.target.closest("header,h3,.an:first-of-type"); if(!hd||!el.contains(hd)||e.target.closest("button,input,select,textarea,a,img")) return;
+function dragDlg(el){ el.addEventListener("pointerdown",e=>{ const hd=e.target.closest("header,h3,.an:first-of-type"); if(!hd||!el.contains(hd)||e.target.closest("button,input,select,textarea,a,img")) return; e.preventDefault(); try{ getSelection().removeAllRanges(); }catch(_){}
   const r=el.getBoundingClientRect(), sx=e.clientX, sy=e.clientY; el.style.transform="none"; el.style.left=r.left+"px"; el.style.top=r.top+"px"; hd.setPointerCapture(e.pointerId);
   const mv=ev=>{ el.style.left=Math.max(0,Math.min(innerWidth-60,r.left+ev.clientX-sx))+"px"; el.style.top=Math.max(0,Math.min(innerHeight-40,r.top+ev.clientY-sy))+"px"; };
   const up=()=>{ hd.removeEventListener("pointermove",mv); hd.removeEventListener("pointerup",up); }; hd.addEventListener("pointermove",mv); hd.addEventListener("pointerup",up); }); }
@@ -2729,7 +2729,10 @@ function doWar(){ const g=S.g, r=roundOf(g), seats=seatsInPlay(g), lines=[];
 /* decyzje gracza z faz automatycznych: upgrade, nagroda za 1. miejsce w wojnie */
 const PD={shown:{}};
 function pendDone(id){ const p=(S.g.pend||{})[id]; if(p) Act.commit({pend:{[id]:null}},{pend:{[id]:p}},null); }
+const PEND_DLG={discI:"discdlg",acad:"acaddlg",pick:"pickdlg",lay:"laydlg",war1:"war1dlg",rez:"rezdlg",pex:"pexdlg",upg:"upgdlg"};
 function pendCheck(){ const g=S.g; if(!g||annBusy()) return; const P=g.pend||{};
+  /* okno decyzji zniknęło (np. po przerysowaniu ekranu), a decyzja wciąż czeka – pokaż je ponownie */
+  for(const id in PD.shown){ const p=P[id]; if(!p){ delete PD.shown[id]; continue; } const el=document.getElementById(PEND_DLG[p.k]||""); if(PEND_DLG[p.k]&&PD.later!==id&&(!el||el.hidden)) delete PD.shown[id]; }
   for(const id of Object.keys(P).sort()){ const p=P[id]; if(!p||PD.shown[id]) continue; if(PD.later===id){ PD.later=null; continue; } if(!(S.auto||S.me===p.s)) continue;
     if(p.k==="upg"){ if(UP.open) return; PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openUpgrade(p.s,p.n,"Nagroda z wydarzenia",null,id); return; }
     if(p.k==="acad"){ PD.shown[id]=1; if(!genOptions(p.s).length){ pendDone(id); return; } if(S.auto){ S.me=p.s; S.pv=p.s; } openAcad(id,p); return; }
