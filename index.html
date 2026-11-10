@@ -1460,8 +1460,8 @@ function renderAD(){
     case "war": body=secTech("mil",1,{key:"send"})+secFort(2,{key:"send",title:"Albo zbuduj fort (3 kamienie − 1 zniżki, 1 chwała)"})+
       sec("Dodatkowo",opt("Zapłać 1 złoto i kup 1 chwałę",{g:-1},t=>takeGlory(t,s),{key:"glory",log:"kupuje chwałę za 1 złoto",gain:`Żeton zdejmie się z toru sam${gloryCost(g.glory||0).i?" (kosztuje też 1 wpływ)":gloryCost(g.glory||0).e?" (kosztuje też 1 energię)":""}.`})); break;
     case "sha": {
-      /* pola zajęte przez ambasadorów innych graczy; Warsztatów (tylko plemiona) szaman nie obsługuje */
-      const occ=Object.keys(FIELDS).filter(f=>f!=="sha"&&f!=="ws"&&pawnsOn(f,"amb").some(id=>g.pieces[id].s!==s));
+      /* pola zajęte przez ambasadorów (także własnych); Warsztatów (tylko plemiona) szaman nie obsługuje */
+      const occ=Object.keys(FIELDS).filter(f=>f!=="sha"&&f!=="ws"&&pawnsOn(f,"amb").length);
       body=sec("Szaman: zapłać 1 energię i wybierz zajęte pole",occ.length? occ.map(f=>act(`${FIELDS[f].n} (−1 energia)`,()=>{ if(cantPay(s,{e:-1})) return; const pp=payPlan(s,{e:-1}), t=tx(s); for(const r in pp.d) t.res(r,pp.d[r]); t.piece("shaman",...fieldCenter(f)); t.go(`płaci szamanowi 1 energię i kładzie znacznik szamana na polu ${FIELDS[f].n}`); openField(f,s,AD.pawn); AD.viaSha=true; renderAD(); })).join("") : "<p class='an'>Żadne pole nie jest jeszcze zajęte.</p>");
       break; }
     case "dip": {
@@ -2191,7 +2191,7 @@ function renderUP(){ const el=dlg("upgdlg","Upgrade robotnika"); if(!UP.open){ e
   const L=upgradesOf(UP.seat).filter(u=>u.cost<=st&&(!TG2||(TG2.card?u.hi.id===TG2.card:(u.hi.terr&&u.hi.terr.c===TG2.terr.c&&u.hi.terr.row===TG2.terr.row))));
   if(!L.length){ UP.open=false; el.hidden=true; UI.toast(`Upgrade niemożliwy (brak robotnika na niższym poziomie${TG2?" tej linii/kolumny":""} albo za mało kamieni) – przepada.`); if(UP.pid){ const id=UP.pid; UP.pid=null; pendDone(id); } return; }
   el.innerHTML=`<header><div><h3>Upgrade robotnika</h3><p class="an">${esc(UP.why)} · ${esc(seatName(UP.seat))} · pozostało: ${UP.n}. Robotnik przechodzi na wyższą kartę tej samej linii albo na wyższy odkryty poziom terytorium (można przeskoczyć kilka poziomów); płacisz tylko różnicę kosztów.</p></div><button class="btn" id="upX">${L.length?"Pomiń":"Zamknij"}</button></header>
-   ${L.length?`<div class="ab">${L.map((u,i)=>`<button class="ao" data-up="${i}"><span class="al">${esc(u.lo.nm)} → ${esc(u.hi.nm)}</span><span class="ac">${u.cost?`<span class="chip neg" style="--c:${RES_INFO.s[1]}">−${u.cost} kamień</span>`:`<span class="chip free">bez dopłaty</span>`}</span><span class="ag">${Object.keys(u.dp).length?prodText(u.dp):"bez zmiany produkcji"}</span></button>`).join("")}</div>`
+   ${L.length?`<div class="ab">${L.map((u,i)=>`<button class="ao" data-up="${i}"><span class="al">${esc(u.lo.nm)} → ${esc(u.hi.nm)}</span><span class="ac">${u.cost?costHTML({s:-u.cost}):`<span class="chip free">bez dopłaty</span>`}</span><span class="ag">${Object.keys(u.dp).length?prodText(u.dp):"bez zmiany produkcji"}</span></button>`).join("")}</div>`
    :`<p class="an">Teraz nie ma czego ulepszyć: potrzebujesz robotnika na niższej karcie i wyższej karty tej samej linii.</p>`}`;
   el.querySelector("#upX").onclick=()=>{ UP.open=false; el.hidden=true; if(UP.pid){ const id=UP.pid; UP.pid=null; pendDone(id); } };
   el.querySelectorAll("[data-up]").forEach(b=>b.onclick=()=>{ const u=L[+b.dataset.up], s=UP.seat, t=tx(s);
