@@ -2881,9 +2881,11 @@ const Table = {
     if(S.auto&&g.turn&&S.me!==g.turn){ S.me=g.turn; S.pv=g.turn; saveSeat(S.code,S.me); } /* tura przechodzi: widok, panel i ręka idą za aktywnym graczem */
     renderTurn(g); renderAgr();
     if(g.evB&&S.me&&!this._evB){ this._evB=true; const host=!g.host||g.host===CID; setTimeout(()=>{ if(S.g.evB) applyFirstEvent(); },host?200:9000+Math.random()*2000); }
+    /* okno akcji (podświetlenia na planszy) nie zostaje otwarte po zmianie fazy albo tury */
+    if(AD.open&&(phaseOf(g)!=="act"||AD.seat!==g.turn)) closeAD();
     annCheck(); pendCheck(); renderRez(); renderGens();
     /* bonus z wydarzenia: okno otwiera się samo w 1. turze gracza (tylko gdy ma wolnego robotnika) */
-    { const s=g.turn, pl=s&&g.players[s], key=roundOf(g)+"|"+s; if(s&&s===S.me&&pl&&pl.evSend&&!AD.open&&!annBusy()&&Table._evs!==key&&freeWorkers(s).length&&techsOf(s,"civ").length){ Table._evs=key; openField("evc",s,null); } }
+    { const s=g.turn, pl=s&&g.players[s], key=roundOf(g)+"|"+s; if(phaseOf(g)==="act"&&s&&s===S.me&&pl&&pl.evSend&&!AD.open&&!annBusy()&&Table._evs!==key&&freeWorkers(s).length&&techsOf(s,"civ").length){ Table._evs=key; openField("evc",s,null); } }
     if(g.barb&&g.barb.id&&!g.barb.done&&!BD.open&&BD.auto!==roundOf(g)&&!annBusy()){ BD.auto=roundOf(g); openBarb(); }
     { const nb=document.getElementById("rNext"); if(nb) nb.hidden=true; }
     if(phaseOf(g)==="manu"&&g.manu&&!g.manu.done&&g.manu.r===4&&!annBusy()){ if(!MD.open&&MD.closedFor!==g.manu.turn) openManu(); else if(MD.open) renderMD(); }
