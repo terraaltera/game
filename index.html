@@ -613,9 +613,9 @@ const svgCache = {};
 const ICON_CAMEL=`<svg class="ico" viewBox="0 0 64 48" aria-hidden="true"><path fill="#cfe3b9" d="M6 22c3-1 5 1 6 4l2 6c2-6 6-14 12-14 5 0 6 6 10 6 3 0 4-8 10-8 5 0 7 5 7 9 0 2 2 2 3 1l2 3c-2 2-5 2-7 1l-1 7 1 9h-4l-1-8-2 1-1 7h-4l1-8c-6 1-12 0-16-2l-2 10h-4l1-10-3-4-1 14H9l1-15-3-8c-2 0-3-1-3-2z"/></svg>`;
 const ICON_CROWN=`<svg class="ico" viewBox="0 0 64 48" aria-hidden="true"><path fill="#f0c84a" stroke="#6b4b08" stroke-width="2.5" stroke-linejoin="round" d="M8 38 4 12l15 11L32 6l13 17 15-11-4 26z"/><rect x="8" y="39" width="48" height="6" rx="2" fill="#f0c84a" stroke="#6b4b08" stroke-width="2.5"/></svg>`;
 /* znaczniki produkcji 5 zasobów: małe sześciany w kolorze zasobu; znaczniki na torach planszy głównej mniejsze */
-function cubeSVG(col){ return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50 8 90 28 50 48 10 28z" fill="${col}" stroke="#111" stroke-width="3" stroke-linejoin="round"/><path d="M10 28 50 48v44L10 72z" fill="${col}" stroke="#111" stroke-width="3" stroke-linejoin="round"/><path d="M10 28 50 48v44L10 72z" fill="#000" opacity=".28"/><path d="M90 28 50 48v44l40-20z" fill="${col}" stroke="#111" stroke-width="3" stroke-linejoin="round"/><path d="M90 28 50 48v44l40-20z" fill="#000" opacity=".12"/><path d="M50 8 90 28 50 48 10 28z" fill="#fff" opacity=".22"/></svg>`; }
+function cubeSVG(col,plus){ return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50 8 90 28 50 48 10 28z" fill="${col}" stroke="#111" stroke-width="3" stroke-linejoin="round"/><path d="M10 28 50 48v44L10 72z" fill="${col}" stroke="#111" stroke-width="3" stroke-linejoin="round"/><path d="M10 28 50 48v44L10 72z" fill="#000" opacity=".28"/><path d="M90 28 50 48v44l40-20z" fill="${col}" stroke="#111" stroke-width="3" stroke-linejoin="round"/><path d="M90 28 50 48v44l40-20z" fill="#000" opacity=".12"/><path d="M50 8 90 28 50 48 10 28z" fill="#fff" opacity=".22"/>${plus?`<path d="M50 52v32M34 68h32" stroke="#111" stroke-width="16" stroke-linecap="round"/><path d="M50 52v32M34 68h32" stroke="#fff" stroke-width="9" stroke-linecap="round"/>`:""}</svg>`; }
 function pieceLook(id,p){ const m=/^mk_\w+_prod(\d)$/.exec(id);
-  if(m){ const col=PROD_COL[PROD_KEYS[+m[1]]]; const k="cube|"+col; if(!svgCache[k]) svgCache[k]="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(cubeSVG(col)); return {src:svgCache[k],w:36,h:36}; }
+  if(m){ const col=PROD_COL[PROD_KEYS[+m[1]]]; const k="cube|"+col+(p.plus?"|+":""); if(!svgCache[k]) svgCache[k]="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(cubeSVG(col,!!p.plus)); return {src:svgCache[k],w:36,h:36}; }
   const [w,h]=PIECE_SIZE[p.k]||[40,40];
   if(/^mk_\w+_(score|str|dip|car)$/.test(id)) return {src:pieceImg(p.k,p.s),w:32,h:32};
   return {src:pieceImg(p.k,p.s),w,h}; }
@@ -1141,7 +1141,7 @@ function tx(seat,base){
   const cur=k=>{ const pr=PP().res; return (k in pr)?pr[k]:((S.g.players[seat].res||{})[k]||0); };
   t.res=(k,d)=>{ if(!d) return t; const b=BB().res; if(!(k in b)) b[k]=(S.g.players[seat].res||{})[k]||0; PP().res[k]=cur(k)+d; return t; };
   t.resNow=k=>cur(k);
-  t.piece=(id,x,y,extra)=>{ const p=S.g.pieces[id]; if(!p) return t; if(!t.before.pieces[id]) t.before.pieces[id]={x:p.x,y:p.y,r:p.r,l:!!p.l,gone:!!p.gone,dw:p.dw||null}; t.patch.pieces[id]={...(t.patch.pieces[id]||{}),x:Math.round(x),y:Math.round(y),r:Act.maxZ()+1+Object.keys(t.patch.pieces).length,...(extra||{})}; return t; };
+  t.piece=(id,x,y,extra)=>{ const p=S.g.pieces[id]; if(!p) return t; if(!t.before.pieces[id]) t.before.pieces[id]={x:p.x,y:p.y,r:p.r,l:!!p.l,gone:!!p.gone,dw:p.dw||null,plus:p.plus||null}; t.patch.pieces[id]={...(t.patch.pieces[id]||{}),x:Math.round(x),y:Math.round(y),r:Act.maxZ()+1+Object.keys(t.patch.pieces).length,...(extra||{})}; return t; };
   t.card=(id,ch)=>{ if(!t.before.cards[id]) t.before.cards[id]={...S.g.cards[id]}; t.patch.cards[id]={...(t.patch.cards[id]||{}),...ch}; return t; };
   t.imp=()=>{ const ids=Act.deckCards("imp").filter(id=>!t.patch.cards[id]); if(!ids.length){ UI.toast("Talia kart imperialnych jest pusta."); return t; }
     const inHand=Object.keys(S.g.cards).filter(id=>{ const c=S.g.cards[id]; const z=(t.patch.cards[id]&&t.patch.cards[id].z)||c.z, o=(t.patch.cards[id]&&"o" in t.patch.cards[id])?t.patch.cards[id].o:c.o; return c.k==="imp"&&z==="hand"&&o===seat; }).length;
@@ -1722,7 +1722,8 @@ function levelPos(seat,r,lv){ const [ox,oy]=zoneO(seat);
 function levelAt(seat,r,x,y){ const [ox,oy]=zoneO(seat); let best=0,bd=1e18;
   const n=(r==="car"||r==="imp")?5:11;
   for(let lv=0;lv<n;lv++){ const [px,py]=levelPos(seat,r,lv); const d=(px-x)**2+(py-y)**2; if(d<bd){bd=d;best=lv;} } return {lv:best,dist:Math.sqrt(bd)}; }
-function levelOf(seat,r,patch){ const id=markerId(seat,r); const p=(patch&&patch.pieces&&patch.pieces[id])||S.g.pieces[id]; if(!p) return 0; return levelAt(seat,r,p.x,p.y).lv; }
+/* produkcja powyżej 10: znacznik wraca na pole 1 z symbolem „+” (11 = pole 1 z plusem, itd.) */
+function levelOf(seat,r,patch){ const id=markerId(seat,r); const pp=patch&&patch.pieces&&patch.pieces[id], p=pp?{...S.g.pieces[id],...pp}:S.g.pieces[id]; if(!p) return 0; return levelAt(seat,r,p.x,p.y).lv+(p.plus&&r!=="car"&&r!=="imp"?10:0); }
 const impLimit = lvI => lvI<=2?2 : lvI<=4?3 : lvI<=6?4 : 5;
 function handImp(seat){ return Object.values(S.g.cards).filter(c=>c&&c.z==="hand"&&c.o===seat&&c.k==="imp").length; }
 /* kultura: tor punktacji wokół planszy głównej (0–100, potem kolejne okrążenia) */
@@ -1735,8 +1736,8 @@ const vpOf = seat => (S.g.players[seat]&&S.g.players[seat].vp)||0;
 
 /* rozszerzenie transakcji: zmiana poziomu produkcji z bonusem progu i zmiana kultury */
 function txLevel(t,seat,r,delta){ if(!delta) return t;
-  const old=levelOf(seat,r,t.patch), max=(r==="car"||r==="imp")?4:10, nv=Math.max(0,Math.min(max,old+delta));
-  t.piece(markerId(seat,r),...levelPos(seat,r,nv));
+  const old=levelOf(seat,r,t.patch), max=(r==="car"||r==="imp")?4:20, nv=Math.max(0,Math.min(max,old+delta));
+  if(max===20) t.piece(markerId(seat,r),...levelPos(seat,r,nv>10?nv-10:nv),{plus:nv>10?true:null}); else t.piece(markerId(seat,r),...levelPos(seat,r,nv));
   const b=PROD_BONUS[r], got=(S.g.players[seat].bon||{})[r];
   if(b && !got && old<b.at && nv>=b.at){ t.patch.players[seat]=t.patch.players[seat]||{}; t.patch.players[seat].bon={...(t.patch.players[seat].bon||{}),[r]:true};
     t.before.players[seat]=t.before.players[seat]||{}; t.before.players[seat].bon={...(t.before.players[seat].bon||{}),[r]:null};
