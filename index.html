@@ -1273,7 +1273,10 @@ function secFort(cost,o={}){
   const s=AD.seat, free=fortGroups(s);
   if(!free.length) return sec(o.title||"Zbuduj fort","<p class='an'>Nie możesz zbudować kolejnego fortu.</p>");
   const fG=!!kiOf(s).fortG, K=kd(s,["m","as"]); const noH=!fG&&((S.g.players[s].res||{}).h||0)<1;
-  return sec(o.title||"Zbuduj fort",(noH?`<p class="awarn">Fort kosztuje 1 chwałę, a nie masz chwały.${AD.k==="war"?" Najpierw kup chwałę (1 złoto).":""}</p>`:"")+
+  /* fort już zbudowany w tym ruchu – ostrzeżenie o braku chwały nie ma sensu */
+  const builtNow=turnEntries(S.g).some(k=>{ const e=(S.g.log||{})[k]; return e&&e.s===s&&/buduje fort/.test(e.m||""); });
+  const warn=noH&&!builtNow;
+  return sec(o.title||"Zbuduj fort",(warn?`<p class="awarn">Fort kosztuje 1 chwałę, a nie masz chwały.${AD.k==="war"?" Najpierw kup chwałę (1 złoto).":""}</p>`:"")+
     free.map(G=>opt(`Fort: ${G.nm}`,fG?{s:-Math.max(0,cost-K.n)}:{s:-Math.max(0,cost-K.n),h:-1},tt=>{ if(fG) kc(tt,s,"fortG"); kc(tt,s,K.k); buildFort(tt,s,G); },{...o,dis:noH,tg:{k:"fort",r:fortRect(s),nm:"Zbuduj fort"},log:`buduje fort (${G.nm})`,gain:`+2 siły, produkcja ${PROD_GEN[G.r]} +1${fG?" · karta imperialna: bez kosztu chwały":""}`})).join(""));
 }
 function secMain(){
