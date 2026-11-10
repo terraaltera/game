@@ -2181,11 +2181,11 @@ function upgradesOf(s){ const out=[], lines=[...new Set(BOARD_TECH.map(B=>B.line
     for(let j=i+1;j<L.length;j++){ const hi=L[j], lo=L[i], dp={}; const keys=new Set(Object.keys(hi.p||{}).concat(Object.keys(lo.p||{}))); keys.forEach(k=>{ const dd=((hi.p||{})[k]||0)-((lo.p||{})[k]||0); if(dd) dp[k]=dd; });
       out.push({lo,hi,w:ws[ws.length-1],cost:Math.max(0,(hi.cost||0)-(lo.cost||0)),dp}); } } });
   return out; }
-function openLose(seat){ const el=dlg("losedlg","Oddaj kartę imperialną"); const ids=Object.keys(S.g.cards).filter(id=>{ const c=S.g.cards[id]; return c&&c.z==="hand"&&c.o===seat&&c.k==="imp"; });
+function openLose(seat,pid){ const el=dlg("losedlg","Oddaj kartę imperialną"); const ids=Object.keys(S.g.cards).filter(id=>{ const c=S.g.cards[id]; return c&&c.z==="hand"&&c.o===seat&&c.k==="imp"; });
   el.innerHTML=`<header><div><h3>Oddaj 1 kartę imperialną</h3><p class="an">Wydarzenie „${esc(curEventName())}” · ${esc(seatName(seat))}. Kliknij kartę, którą oddajesz.</p></div><button class="btn" id="lsX">Zamknij</button></header>
     <div class="mk">${ids.map(id=>`<button class="mc" data-lose="${id}"><img src="${faceSrc("imp",S.g.cards[id].n)}" alt="" data-pv="imp|${S.g.cards[id].n}"><span>Oddaj</span></button>`).join("")||"<p class='an'>Brak kart na ręce.</p>"}</div>`;
   el.querySelector("#lsX").onclick=()=>{ el.hidden=true; };
-  el.querySelectorAll("[data-lose]").forEach(b=>b.onclick=()=>{ const t=tx(seat); t.card(b.dataset.lose,{z:"box",o:null}); t.pl("loseImp",0); el.hidden=true; t.go("oddaje kartę imperialną (wydarzenie)"); });
+  el.querySelectorAll("[data-lose]").forEach(b=>b.onclick=()=>{ const t=tx(seat); t.card(b.dataset.lose,{z:"box",o:null}); t.pl("loseImp",0); const P=S.g.pend||{}; const id=pid||Object.keys(P).find(k=>P[k]&&P[k].s===seat&&P[k].k==="loseI"); if(id){ t.patch.pend={...(t.patch.pend||{}),[id]:null}; t.before.pend={...(t.before.pend||{}),[id]:P[id]}; } el.hidden=true; t.go("oddaje kartę imperialną (wydarzenie)"); });
   el.hidden=false; }
 const UP={open:false};
 /* target: {card:id} – upgrade na tę kartę; {terr:{c,row}} – na to terytorium; brak – dowolny możliwy (np. kolonia) */
@@ -2353,7 +2353,7 @@ function applyEventAll(base,evN){ const E=EVALL[evN]; if(!E) return [];
     if(E.car) txCaravan(t,s,E.car); if(E.imp) t.imp(); if(E.h) takeGlory(t,s);
     if((S.g.players[s].evSend||0)||E.evSend) t.pl("evSend",E.evSend||0);
     if(E.loseImp){ const hand=Object.keys(S.g.cards).filter(id=>{ const c=S.g.cards[id]; return c&&c.z==="hand"&&c.o===s&&c.k==="imp"&&!t.patch.cards[id]; });
-      if(hand.length){ t.pl("loseImp",1); t.note("musi oddać 1 kartę imperialną (wybiera sam)"); } else { txVP(t,s,-3); t.note("brak karty imperialnej: −3 kultury"); } }
+      if(hand.length){ t.pl("loseImp",1); pendAdd(t,s,"loseI",1); t.note("musi oddać 1 kartę imperialną (wybiera sam – gra czeka)"); } else { txVP(t,s,-3); t.note("brak karty imperialnej: −3 kultury"); } }
     if(E.pop){ const n=nextPop(s); if(n){ t.piece(n.id,...zoneSupplySpot(seatIdx(s))); if(n.j===6) txStr(t,s,2); if(leadOf(s)===269){ t.res("i",1); t.note("Kleopatra: +1 wpływ"); } } }
     notes.push(...(t.notes||[]).map(x=>`${seatName(s)}: ${x}`)); });
   if(E.war){ const t=tx(seatsInPlay(S.g)[0],base); txWar(t,E.war); }
@@ -2733,13 +2733,14 @@ function doWar(){ const g=S.g, r=roundOf(g), seats=seatsInPlay(g), lines=[];
 /* decyzje gracza z faz automatycznych: upgrade, nagroda za 1. miejsce w wojnie */
 const PD={shown:{}};
 function pendDone(id){ const p=(S.g.pend||{})[id]; if(p) Act.commit({pend:{[id]:null}},{pend:{[id]:p}},null); }
-const PEND_DLG={discI:"discdlg",acad:"acaddlg",pick:"pickdlg",lay:"laydlg",war1:"war1dlg",rez:"rezdlg",pex:"pexdlg",upg:"upgdlg"};
+const PEND_DLG={loseI:"losedlg",discI:"discdlg",acad:"acaddlg",pick:"pickdlg",lay:"laydlg",war1:"war1dlg",rez:"rezdlg",pex:"pexdlg",upg:"upgdlg"};
 function pendCheck(){ const g=S.g; if(!g||annBusy()) return; const P=g.pend||{};
   /* okno decyzji zniknęło (np. po przerysowaniu ekranu), a decyzja wciąż czeka – pokaż je ponownie */
   for(const id in PD.shown){ const p=P[id]; if(!p){ delete PD.shown[id]; continue; } const el=document.getElementById(PEND_DLG[p.k]||""); if(PEND_DLG[p.k]&&PD.later!==id&&(!el||el.hidden)) delete PD.shown[id]; }
   for(const id of Object.keys(P).sort()){ const p=P[id]; if(!p||PD.shown[id]) continue; if(PD.later===id){ PD.later=null; continue; } if(!(S.auto||S.me===p.s)) continue;
     if(p.k==="upg"){ if(UP.open) return; PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openUpgrade(p.s,p.n,"Nagroda z wydarzenia",null,id); return; }
     if(p.k==="acad"){ PD.shown[id]=1; if(!genOptions(p.s).length){ pendDone(id); return; } if(S.auto){ S.me=p.s; S.pv=p.s; } openAcad(id,p); return; }
+    if(p.k==="loseI"){ PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openLose(p.s,id); return; }
     if(p.k==="lay"){ PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openLay(id,p); return; }
     if(p.k==="pick"){ if(PK.open) return; PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openPick(p.s,p.n,p.why||"nagroda",id); return; }
     if(p.k==="pex"){ PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openPex(id,p); return; }
