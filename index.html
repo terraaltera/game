@@ -300,6 +300,7 @@ input[type=text]{background:#0f1317;border:1px solid var(--line);border-radius:6
 .rk.h{border-color:#666}
 .aico{width:30px;height:30px;vertical-align:middle;margin-right:6px;flex:none}
 .aico.sm{width:22px;height:22px;margin-right:2px}
+.aico.gear{width:26px;height:26px;padding:2px;margin-right:3px;border-radius:6px;background:#d9d4c7;border:2px solid rgba(0,0,0,.45);box-sizing:border-box}
 .cfh{display:flex;align-items:center;gap:12px}
 .hico{width:52px;height:52px;flex:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
 .ao .al{display:inline-flex;align-items:center;gap:2px}
@@ -1118,7 +1119,7 @@ const RKC={g:["złoto","#e0b230"],s:["kamień","#8e959b"],e:["energia","#2f73d6"
 const RK=(r,txt)=>{ const I=RKC[r]||[r,"#666"]; return `<span class="rk${r==="h"?" h":""}" style="--c:${I[1]}" title="${I[0]}">${txt}${r==="h"?"★":""}</span>`; };
 const AICO={wrk:s=>`<svg class="aico" viewBox="0 0 100 100" aria-hidden="true"><path d="${MEEPLE}" fill="${SEAT_COL[s]||"#888"}" stroke="#111" stroke-width="5"/></svg>`,
   upg:`<svg class="aico" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="#e0731c" stroke="#7a3508" stroke-width="2.5"/><path d="M20 7 L30 19 H23.5 V32 H16.5 V19 H10 Z" fill="#fde9c2" stroke="#7a3508" stroke-width="1.6" stroke-linejoin="round"/></svg>`,
-  disc:`<img class="aico" src="${asset("ico/disc.png")}" alt="">`, gear:`<img class="aico sm" src="${asset("ico/gear.png")}" alt="produkcja">`};
+  disc:`<img class="aico" src="${asset("ico/disc.png")}" alt="">`, gear:`<img class="aico gear" src="${asset("ico/gear.png")}" alt="produkcja" title="produkcja">`};
 function costHTML(d){ const parts=Object.keys(d).filter(k=>d[k]).map(k=>RK(k,(d[k]>0?"+":"−")+Math.abs(d[k])));
   return parts.length? parts.join("") : `<span class="chip free">bez kosztu</span>`; }
 
