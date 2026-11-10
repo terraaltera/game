@@ -2465,8 +2465,9 @@ function passTurn(){ const g=S.g, s=g.turn; if(!s||phaseOf(g)!=="act") return;
   Store.deepMerge(g,{passed:{[s]:true}}); Act.commit({passed:{[s]:true}},{passed:{[s]:false}},"pasuje – nie wykonuje już akcji w tej rundzie",s); endTurn(); }
 function endTurn(){ const g=S.g, s=g.turn; if(!s) return; const o=turnOrder(g), ph=phaseOf(g), n=o.length;
   const patch={turnT:Date.now()+50}, before=turnBefore(g);
-  /* bonus z wydarzenia (robotnik na technologię cywilną) obowiązuje tylko w 1. turze gracza w rundzie */
-  if((g.players[s]||{}).evSend){ patch.players={[s]:{evSend:0}}; before.players={[s]:{evSend:g.players[s].evSend}}; }
+  /* bonus z wydarzenia (robotnik na technologię cywilną) działa w fazie akcji i obowiązuje tylko w 1. turze gracza w rundzie –
+     w fazie dyplomacji nie znika, czeka na jego turę w akcjach */
+  if(ph==="act"&&(g.players[s]||{}).evSend){ patch.players={[s]:{evSend:0}}; before.players={[s]:{evSend:g.players[s].evSend}}; }
   if(ph==="dip"){ const dn=(g.dipN||0)+1;
     if(dn>=n){ Object.assign(patch,turnPatch(g,"act"),{phase:"act"}); before.phase="dip";
       annAdd({patch,before},"Akcje",[`Zaczyna ${seatName(patch.turn)}.`]);
@@ -2928,7 +2929,8 @@ const Table = {
           return offers.map(k=>`<div class="pactbox">Pakt od ${swatch(P[k].from)} <b>${esc(seatName(P[k].from))}</b>: Ty ${pactText(P[k].toGet)}, ${esc(seatName(P[k].from))} ${pactText(P[k].fromGet)}.${(mine||S.auto)?` <button class="btn primary" data-pact="${k}|1">Przyjmij</button> <button class="btn" data-pact="${k}|0">Odrzuć</button>`:" Czeka na odpowiedź."}</div>`).join("")+
             (on.length?`<div class="handinfo">Pakty: ${on.map(p=>`${esc(seatName(p.from===s?p.to:p.from))} (Ty: ${pactText(p.mine)})`).join("; ")}</div>`:""); })()}
         ${(mine||S.auto)&&pl.loseImp?`<button class="btn primary" id="loseB">Wydarzenie: wybierz kartę imperialną do oddania</button>`:""}
-        ${(mine||S.auto)&&pl.evSend&&g.turn===s?`<button class="btn primary" id="evSendB">Bonus z wydarzenia: wyślij robotnika na technologię cywilną (−${pl.evSend} kamienie)</button>`:""}
+        ${(mine||S.auto)&&pl.evSend&&g.turn===s&&phaseOf(g)==="act"?`<button class="btn primary" id="evSendB">Bonus z wydarzenia: wyślij robotnika na technologię cywilną (−${pl.evSend} kamienie)</button>`:""}
+        ${pl.evSend&&g.turn===s&&phaseOf(g)!=="act"?`<div class="handinfo">Bonus z wydarzenia (wyślij robotnika na technologię cywilną, −${pl.evSend} kamienie) – użyjesz go w fazie akcji, w swojej turze.</div>`:""}
         ${gensOf(s).length?`<div class="handinfo">Generałowie: ${gensOf(s).map(k=>`${GENS[k].lv}. poz. (${genReqTxt(GENS[k])}, +${GENS[k].b})${genActive(s).act.includes(k)?" ✓":" – brak zestawu"}`).join("; ")}</div>`:""}
         ${LEAD[leadOf(s)]?`<div class="handinfo">Lider: <b>${LEAD[leadOf(s)].nm}</b> – stały bonus: ${LEAD[leadOf(s)].perm}</div>`:""}
         <div class="handinfo">${pl.colMod?`Bonus do kolonizacji w tej rundzie: <b>+${pl.colMod}</b> · `:""}Siła: <b>${strOf(s)}</b> · karawana: pole ${carOf(s)} z 6 · tor dyplomacji: ${dipOf(s)} z 3${pl.upk&&(pl.upk.g||pl.upk.i)?` · utrzymanie wojska: ${pl.upk.g?`−${pl.upk.g} zł `:""}${pl.upk.i?`−${pl.upk.i} wpł.`:""}`:""}</div>
