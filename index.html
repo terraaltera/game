@@ -1428,6 +1428,7 @@ function kiSepSecs(a,F){
 function kiUsedThisTurn(s){ const U=S.g.kiUse||{}; return !!U[s] && U[s]===S.g.turnT; }
 function kiPlayOpt(j){ const id=AD.ki; if(!id) return; AD.ki=null; Object.assign(KP,{open:false,id,ph:"act",seat:AD.seat,sel:{act:j}}); playKI(); }
 function kiHandClick(id){ const c=S.g.cards[id], ph=phaseOf(S.g); if(!c) return; UI.preview(null);
+  if(TURN_PHASES.includes(ph)&&c.o!==S.g.turn){ UI.toast(`Tę kartę może zagrać tylko ${seatName(c.o)} – teraz jest tura: ${seatName(S.g.turn)}.`); return; }
   if(ph==="act"&&kiUsedThisTurn(c.o)){ UI.toast("W tej turze już zagrałeś kartę imperialną – tylko 1 na turę."); return; }
   if(ph==="act"&&AD.open&&AD.seat===c.o&&((S.g.pieces[AD.pawn]&&S.g.pieces[AD.pawn].k==="amb")||AD.k==="gld")){ AD.ki=AD.ki===id?null:id; renderAD(); return; }
   if(ph==="dip"){ openPlayImp(id,"dip"); return; }
@@ -2511,7 +2512,7 @@ function playSpot(seat){ const arr=seatsInPlay(S.g), i=arr.indexOf(seat), T=tray
   const n=Object.values(S.g.cards).filter(c=>c&&c.z==="table"&&c.pl===seat).length;
   const per=Math.max(1,Math.floor((T.w-40)/120)); return [T.x+20+CARD.w/2+(n%per)*120, PLAY_Y+Math.floor(n/per)*60]; }
 const KP={open:false};
-function openPlayImp(id,ph){ Object.assign(KP,{open:true,id,ph,seat:S.me}); renderKP(); }
+function openPlayImp(id,ph){ const c=S.g.cards[id]; Object.assign(KP,{open:true,id,ph,seat:c&&c.o?c.o:S.me}); renderKP(); }
 function playedMenu(id){ const c=S.g.cards[id], s=c.pl, o=turnOrder(S.g), nx=o[(o.indexOf(s)+1)%o.length];
   return [["Połóż na spód talii",()=>Act.toDeck(id,"bottom")],
     ["Usuń kartę z gry",()=>Act.commit({cards:{[id]:{z:"box"}}},{cards:{[id]:{...c}}},"usuwa zagraną kartę imperialną z gry",s)],
