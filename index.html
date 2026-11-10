@@ -1948,7 +1948,8 @@ function upgradesOf(s){ const out=[], lines=[...new Set(BOARD_TECH.map(B=>B.line
   const stacks=lines.map(line=>lineStack(s,line));
   /* terytoria: robotnik idzie z niższego rzędu na wyższy (odkryty) w tej samej kolumnie */
   const d=discovered(s);
-  ["szare","niebieskie"].forEach(c=>{ const L=[]; for(let row=4;row>=1;row--){ const j=TERR.findIndex(t=>t.c===c&&t.row===row); if(row<4&&!d[j]) continue;
+  /* kolejność od poziomu 1 do 4: lo = niższy poziom, hi = wyższy (indeks rośnie z poziomem) */
+  ["szare","niebieskie"].forEach(c=>{ const L=[]; for(let row=1;row<=4;row++){ const j=TERR.findIndex(t=>t.c===c&&t.row===row); if(row<4&&!d[j]) continue;
       const rk=c==="szare"?"s":"e"; L.push({nm:terrNm(c,row).toLowerCase(),terr:{c,row},cost:TERR_WORK[c][row-1],p:{[rk]:TERR_PROD[c][row-1]},rect:terrRect(s,c,row)}); }
     stacks.push(L); });
   stacks.forEach(L=>{ for(let i=0;i<L.length-1;i++){ const ws=workersOn(s,L[i].rect); if(!ws.length) continue;
