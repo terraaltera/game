@@ -2472,7 +2472,7 @@ function endTurn(){ const g=S.g, s=g.turn; if(!s) return; const o=turnOrder(g), 
   if(ph==="act"&&(g.players[s]||{}).evSend){ patch.players={[s]:{evSend:0}}; before.players={[s]:{evSend:g.players[s].evSend}}; }
   if(ph==="dip"){ const dn=(g.dipN||0)+1;
     if(dn>=n){ Object.assign(patch,turnPatch(g,"act"),{phase:"act"}); before.phase="dip";
-      annAdd({patch,before},"Akcje",[`Zaczyna ${seatName(patch.turn)}.`]);
+      annAdd({patch,before},"Akcje",[]);
       Act.commit(patch,before,`kończy ruch. Wszyscy po dyplomacji – faza: Akcje. Zaczyna ${seatName(patch.turn)}.`,s); return; }
     patch.dipN=dn; patch.turn=o[(o.indexOf(s)+1)%n];
     Act.commit(patch,before,`kończy ruch w dyplomacji. Teraz: ${seatName(patch.turn)}.`,s); return; }
