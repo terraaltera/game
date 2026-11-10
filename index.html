@@ -322,12 +322,23 @@ input[type=text]{background:#0f1317;border:1px solid var(--line);border-radius:6
 .mnrow .cf{flex-direction:column;flex:0 1 220px}
 .mnrow .cf img{width:170px}
 .sumlist{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px;font-size:14px;line-height:1.45}
-#act{position:absolute;left:8px;right:8px;top:8px;z-index:65;max-height:56%;overflow:auto;background:color-mix(in srgb,var(--panel) 95%,transparent);border:1px solid var(--brass);border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.55);padding:8px 10px;display:flex;flex-direction:column;gap:6px;cursor:default}
+#act{position:absolute;left:16px;top:16px;width:min(470px,calc(100% - 32px));z-index:65;max-height:80%;overflow:auto;background:color-mix(in srgb,var(--panel) 95%,transparent);border:1px solid var(--brass);border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.55);padding:8px 10px;display:flex;flex-direction:column;gap:6px;cursor:default}
 #act .ahd{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 #act .fname{font-family:var(--f-display);font-size:20px;color:var(--brass-2)}
 #act .who{font-size:13px;color:var(--ink-2);display:flex;gap:6px;align-items:center}
 #act .sp{flex:1}
-#act .bsecs{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
+#act .bsecs{display:flex;flex-direction:column;gap:8px;align-items:stretch}
+#act .ahd{cursor:move;user-select:none;touch-action:none;border-bottom:1px solid var(--line);padding-bottom:6px}
+#act .ahd .btn{cursor:pointer}
+#act .fico{width:46px;height:46px;flex:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+#act .fhead{display:flex;flex-direction:column;line-height:1.15}
+#act .bsec{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+#act .bsec.hint,#act .bsec.src{background:none;border:none;padding:0 2px}
+#act .bsec .sico{width:30px;height:30px;vertical-align:middle;margin-right:6px}
+#act .bsec .bt{display:inline-flex;align-items:center;flex-wrap:wrap;gap:4px}
+#act .bsec .bt em{font-size:12px}
+#act .mkstrip{gap:10px}
+#act .mcs img{height:min(78px,9vh)}
 #act .bsecs>.awarn{flex-basis:100%}
 #act .bsec{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;font-size:13px}
 #act .bsec .bt{font-weight:700;color:var(--ink)}
@@ -1163,7 +1174,21 @@ const pickMsgs=b=>(b.match(/<p class="(awarn|okmsg)">[\s\S]*?<\/p>/g)||[]).join(
 const sec=(title,body,note)=>{ if(KIOV){ KIOV.hit=false; return ""; }
   const t=body.includes(TGM), b=/<button/.test(body);
   if(!t&&!b){ const w=pickMsgs(body); return w?`<div class="bsec"><span class="bt">${title}</span>${w}</div>`:""; }
-  return `<div class="bsec${t?" tg":""}"><span class="bt">${title}${t?' <em>(kliknij podświetlone)</em>':""}</span>${b?`<span class="bb">${body}</span>`:pickMsgs(body)}</div>`; };
+  const ic=secIco(title);
+  return `<div class="bsec${t?" tg":""}"><span class="bt">${ic?`<img class="sico" src="${asset("ico/"+ic+".png")}" alt="">`:""}${title}${t?' <em>– wybierz na planszy</em>':""}</span>${b?`<span class="bb">${body}</span>`:pickMsgs(body)}</div>`; };
+const SEC_ICO=[[/Odkryj/,"disc"],[/populacj/i,"pop"],[/terytori/,"axe"],[/cywiln/,"civ"],[/militarn|wojownik/i,"mil"],[/fort/i,"mil"],[/cud/i,"won"],[/technologi/i,"tech"],[/Karawan/,"camel"],[/kartę imperialną/,"crown"]];
+const secIco=t=>{ const m=SEC_ICO.find(([r])=>r.test(String(t))); return m?m[1]:""; };
+const FIELD_ICO={bld:"axe",exp:"disc",phi:"tech",gov:"civ",bis:"won",arc:"won",war:"mil",tra:"camel",kpop:"pop",evc:"civ"};
+/* okno akcji: pływające, przesuwane za nagłówek; pozycja zapamiętana w tej przeglądarce */
+let ACTPOS=null; try{ ACTPOS=JSON.parse(localStorage.getItem("ta-actpos")||"null"); }catch(e){}
+function placeAct(el){ const host=el.parentNode; if(!host) return; const W=host.clientWidth, H=host.clientHeight, w=el.offsetWidth, hh=el.offsetHeight;
+  const p=ACTPOS||{x:16,y:16}; const x=Math.max(0,Math.min(p.x,W-w-4)), y=Math.max(0,Math.min(p.y,Math.max(0,H-60)));
+  el.style.left=x+"px"; el.style.top=y+"px";
+  if(!el._drag){ el._drag=true; el.addEventListener("pointerdown",e=>{ const hd=e.target.closest(".ahd"); if(!hd||e.target.closest("button")) return;
+      const sx=e.clientX, sy=e.clientY, ox=el.offsetLeft, oy=el.offsetTop; hd.setPointerCapture(e.pointerId);
+      const mv=ev=>{ ACTPOS={x:ox+ev.clientX-sx,y:oy+ev.clientY-sy}; el.style.left=ACTPOS.x+"px"; el.style.top=ACTPOS.y+"px"; };
+      const up=()=>{ hd.removeEventListener("pointermove",mv); hd.removeEventListener("pointerup",up); placeAct(el); try{ localStorage.setItem("ta-actpos",JSON.stringify(ACTPOS)); }catch(e){} };
+      hd.addEventListener("pointermove",mv); hd.addEventListener("pointerup",up); }); } }
 const evNote=(txt)=>txt?`<p class="evn">Wydarzenie „${esc(curEventName())}”: ${txt}</p>`:"";
 
 function secDiscover(disc,o={}){
@@ -1425,24 +1450,23 @@ function renderAD(){
         if(cnt(j)){ items.push(`<span class="kichip">${esc(kiOptText(o))} (kliknij podświetlone)</span>`); return; } }
       items.push(act(`Zagraj: ${esc(kiOptText(o))}`,()=>kiPlayOpt(j))); });
     kiBar=`<div class="bsec ki"><span class="bt"><img src="${faceSrc("imp",c.n)}" data-pv="imp|${c.n}" alt=""> Karta imperialna:</span><span class="bb">${items.join("")}${act("Nie zagrywam",()=>{ AD.ki=null; })}</span></div>`; }
-  else if(((pawn&&pawn.k==="amb")||k==="gld")&&phaseOf(g)==="act"&&handImp(s)) kiBar=`<div class="bsec hint"><span class="bt">Karta imperialna (opcjonalnie): kliknij kartę w ręce na dole, a podświetlą się miejsca, gdzie możesz jej użyć.</span></div>`;
+  else if(((pawn&&pawn.k==="amb")||k==="gld")&&phaseOf(g)==="act"&&handImp(s)) kiBar=`<div class="bsec hint"><span class="bt"><img class="sico" src="${asset("ico/crown.png")}" alt="">karta imperialna (opcjonalnie): kliknij kartę w ręce</span></div>`;
   let srcBar="";
   if(AD.needW){ const fw=freeWorkers(s);
     srcBar= AD.src? `<div class="bsec src"><span class="bt">Przenosisz ${g.pieces[AD.src].k==="gen"?"geniusza":"robotnika"} z: ${esc(workerHome(s,AD.src).nm)} – kliknij miejsce docelowe.</span><span class="bb">${act("Anuluj przeniesienie",()=>{ AD.src=null; })}</span></div>`
-      : `<div class="bsec hint"><span class="bt">Wolni robotnicy: <b>${fw.length}</b>${fw.some(id=>g.pieces[id].k==="gen")?` (geniusze: ${fw.filter(id=>g.pieces[id].k==="gen").length})`:""}. ${fw.length?"Możesz też kliknąć":"Kliknij"} robotnika stojącego na planszy (niebieskie kółko), żeby go przenieść – produkcja zmieni się sama.</span></div>`; }
+      : `<div class="bsec hint"><span class="bt">${AICO.wrk(s).replace('class="aico"','class="aico sm"')}wolni: <b>${fw.length}</b>${fw.some(id=>g.pieces[id].k==="gen")?` (geniusze: ${fw.filter(id=>g.pieces[id].k==="gen").length})`:""} · przeniesienie: kliknij robotnika na planszy</span></div>`; }
   const myTurn=(phaseOf(g)==="act"||(phaseOf(g)==="dip"&&AD.dipEnd))&&g.turn===s;
   const iEnd=AH.length; AH.push(()=>{ closeAD(); if(myTurn) endTurn(); Cam.preset("main"); });
   const iX=AH.length; AH.push(()=>closeAD());
   const iP=AH.length; AH.push(()=>{ closeAD(); passTurn(); Cam.preset("main"); });
   const P=(k2)=>`<span class="rv ${(res[k2]||0)<0?"neg":""}" title="${RES_INFO[k2][0]}"><i style="background:${RES_INFO[k2][1]}"></i>${res[k2]||0}</span>`;
-  el.innerHTML=`<div class="ahd"><span class="fname">${F.n}</span><span class="who">${swatch(s)} ${esc(seatName(s))}${pawn?" · "+PIECE_PL[pawn.k]:""}</span>
-    <span class="ares">${["g","s","e","i","h"].map(P).join("")}<span class="rv">siła ${strOf(s)}</span></span><span class="sp"></span>
+  el.innerHTML=`<div class="ahd" title="Przeciągnij, żeby przesunąć okno">${FIELD_ICO[k]?`<img class="fico" src="${asset("ico/"+FIELD_ICO[k]+".png")}" alt="">`:""}<span class="fhead"><span class="fname">${F.n}</span><span class="who">${swatch(s)} ${esc(seatName(s))}${pawn?" · "+PIECE_PL[pawn.k]:""}</span></span><span class="sp"></span>
     <button class="btn primary" data-h="${iEnd}" title="${myTurn?"Kończy ruch; kolejka przechodzi na następnego gracza":"Zamyka pasek"}">${myTurn?"Koniec ruchu ▸":"Gotowe"}</button>${myTurn?`<button class="btn" data-h="${iP}" title="Kończy akcje w tej rundzie – kolejka Cię pomija">Pas</button>`:""}<button class="btn" data-h="${iX}" title="Zamknij pasek bez kończenia ruchu" aria-label="Zamknij pasek">✕</button></div>
     <div class="bsecs">${warn.map(w=>`<p class="awarn">${w}</p>`).join("")}${srcBar}${kiBar}${body}${mainSec}${kiSec}</div>${mkStrip()}`;
   el.hidden=false;
   renderTargets(); Table.renderHand();
   /* pasek urósł albo zmalał: plansza gracza ponownie mieści się pod nim */
-  { const h=el.getBoundingClientRect().height, v="p"+seatIdx(s); if(AD.barH!==undefined&&Math.abs(h-AD.barH)>16&&S.viewName===v) requestAnimationFrame(()=>Cam.preset(v)); AD.barH=h; }
+  placeAct(el);
   if(CF.T&&!document.getElementById("cfmdlg").hidden){ const T=TG[CF.k]; if(!T){ closeCF(); } }
 }
 /* osobna akcja z karty imperialnej (gdy pole nie daje takiej akcji) */
@@ -1468,7 +1492,7 @@ function kiHandClick(id){ const c=S.g.cards[id], ph=phaseOf(S.g); if(!c) return;
   if(ph==="act"){ UI.toast("Kartę imperialną zagrywasz razem z ambasadorem: postaw ambasadora na polu akcji, a potem kliknij kartę."); return; }
   UI.toast("Karty imperialne zagrywa się w fazie dyplomacji albo akcji."); }
 /* kopia rynku nad planszą gracza: dostępne karty podświetlone, reszta przyciemniona */
-function mkStrip(){ const M=marketCards(); if(!M.length) return "";
+function mkStrip(){ const M=marketCards(); if(!M.length||!Object.keys(TG).some(k=>/^m:/.test(k))) return "";
   return `<div class="mkstrip">${[2,1,0].map(r=>{ const L=M.filter(m=>m.row===r); return `<div class="mg"><div class="mgl">${3-r} ${r===2?"złoto":"złota"}${r===0?" + karta imperialna":""}</div><div class="mgc">${L.map(m=>{ const T=TG["m:"+m.id], on=!!T&&T.e.some(e=>!e.lack.length);
     return `<button class="mcs ${on?"on":"off"}" data-tk="m:${m.id}" aria-disabled="${!on}" aria-label="${esc((TECH[m.c.n]||{}).nm||"karta")}"><img src="${faceSrc(m.c.k,m.c.n)}" alt="" data-pv="${m.c.k}|${m.c.n}"></button>`; }).join("")}</div></div>`; }).join("")}</div>`; }
 /* robotnicy stojący na technologii albo terytorium (do przeniesienia) */
@@ -3032,7 +3056,7 @@ const Cam = {
     S.view.x = px-(px-S.view.x)*(ns/S.view.s); S.view.y = py-(py-S.view.y)*(ns/S.view.s); S.view.s=ns; this.apply(); },
   fit(x,y,w,h){ const vp=document.getElementById("viewport"); const r=vp.getBoundingClientRect(); const pad=24;
     /* pasek akcji u góry widoku: plansza mieści się pod nim */
-    let tp=0; const a=document.getElementById("act"); if(a&&!a.hidden&&a.parentNode===vp){ const ar=a.getBoundingClientRect(); if(ar.height) tp=Math.max(0,ar.bottom-r.top); }
+    let tp=0; /* okno akcji pływa nad planszą – nie przesuwa widoku */
     const H=Math.max(120,r.height-tp);
     const s=Math.min((r.width-pad*2)/w,(H-pad*2)/h); S.view.s=s; S.view.x=(r.width-w*s)/2-x*s; S.view.y=tp+(H-h*s)/2-y*s; this.apply(); },
   region(name){
