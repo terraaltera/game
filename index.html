@@ -285,6 +285,8 @@ input[type=text]{background:#0f1317;border:1px solid var(--line);border-radius:6
 #rezs{position:absolute;left:0;top:0;z-index:99999;pointer-events:none}
 .rezm{position:absolute;border:6px dashed var(--c);border-radius:14px;background:color-mix(in srgb,var(--c) 14%,transparent)}
 #gens{position:absolute;left:0;top:0;z-index:99998;pointer-events:none}
+#gens .acadhit{position:absolute;pointer-events:auto;cursor:pointer;border:4px solid #e8c766;border-radius:14px;box-shadow:0 0 22px #e8c766aa;animation:acpulse 1.6s ease-in-out infinite}
+@keyframes acpulse{50%{box-shadow:0 0 6px #e8c76633}}
 .genm{position:absolute;width:40px;height:40px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.6)}
 #acaddlg .genrow{display:grid;grid-template-columns:90px repeat(4,1fr);gap:8px;align-items:stretch}
 #acaddlg .genlv{font-weight:700;color:var(--brass-2);align-self:center}
@@ -294,6 +296,7 @@ input[type=text]{background:#0f1317;border:1px solid var(--line);border-radius:6
 #acaddlg .gen.can{border-color:var(--brass)}
 #acaddlg .gen.taken{border-color:var(--c);background:color-mix(in srgb,var(--c) 18%,var(--panel-2))}
 #coldlg .spc{display:flex;gap:8px;align-items:center;font-size:13px;margin:4px 0}
+#coldlg .spc.prot{background:#3a2d10;border:1px solid #e8c766;border-radius:6px;padding:4px 8px}
 .gused{position:absolute;background:rgba(10,10,10,.55);border-radius:12px;display:flex;align-items:center;justify-content:center}
 .gused span{font:700 30px system-ui;color:#ddd;text-shadow:0 2px 4px #000;transform:rotate(-20deg)}
 .gready{position:absolute;border:6px solid #e8c766;border-radius:16px;box-shadow:0 0 26px rgba(232,199,102,.6);animation:tgp 1.8s ease-in-out infinite}
@@ -347,6 +350,8 @@ input[type=text]{background:#0f1317;border:1px solid var(--line);border-radius:6
 #act .atile.sel{border-color:#e8c766;background:rgba(232,199,102,.2);box-shadow:0 0 12px rgba(232,199,102,.45)}
 #act .atile.off,#act .atile:disabled{opacity:.35;filter:grayscale(.8);cursor:not-allowed}
 #act .atile.off:disabled{pointer-events:auto}
+#act .atile.done{position:relative}
+#act .atile .tdone{position:absolute;right:4px;bottom:2px;font-weight:700;color:#7fd17f}
 #act .tico{width:48px;height:48px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
 #act .atile .rk{flex:none}
 #act .tico.sm{width:34px;height:34px}
@@ -373,6 +378,8 @@ input[type=text]{background:#0f1317;border:1px solid var(--line);border-radius:6
 #act .kisel{display:flex;gap:10px;align-items:flex-start}
 #act .kimg{height:120px;border-radius:6px}
 #act .kiop{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#act .kimode{display:flex;gap:8px;margin:8px 0 4px;flex-wrap:wrap}
+#act .kimode .vbtn{display:inline-flex;align-items:center;gap:6px}
 #act .ainfo{font-size:12.5px}
 #act .ahelp{border-top:1px solid var(--line);padding-top:6px;font-size:13px;color:#cfd6dd;min-height:2.6em}
 #mkbar{position:absolute;left:8px;right:8px;top:8px;z-index:60;background:color-mix(in srgb,var(--panel) 95%,transparent);border:1px solid var(--brass);border-radius:12px;box-shadow:0 8px 22px rgba(0,0,0,.5);padding:6px 10px}
@@ -1087,7 +1094,7 @@ const FIELDS={
   bis:{n:"Biskup",r:[755,650,1045,775]},
   arc:{n:"Architekt",r:[1105,650,1460,775]},
   sha:{n:"Szaman",r:[712,830,1003,930]},
-  war:{n:"Wojownik",r:[1065,830,1420,955]},
+  war:{n:"Warlord",r:[1065,830,1420,955]},
   tra:{n:"Handlarz",r:[85,935,565,1225]}
 };
 function fieldAt(x,y){ for(const k in FIELDS){ const [a,b,c,d]=FIELDS[k].r; if(x>=a-15&&x<=c+15&&y>=b-15&&y<=d+15) return k; } return null; }
@@ -1156,7 +1163,8 @@ function tx(seat,base){
   t.go=msg=>{ Act.commit(t.patch,t.before,msg+(t.notes&&t.notes.length?" · "+t.notes.join(", "):""),seat);
     /* zapamiętane kliknięcie robotnika na planszy dotyczy tylko tego jednego ruchu – po innej akcji (np. odkryciu) nie może zamienić budowy w przeniesienie */
     AD.src=null;
-    if(t.upg){ if(seat===S.me||S.auto) openUpgrade(seat,t.upg,t.upgT?(t.upgT.card?"bonus upgrade z kupionej technologii":"bonus upgrade z odkrytego terytorium"):"bonus upgrade",t.upgT); }
+    if(t.upg&&AD.open&&AD.seat===seat&&phaseOf(S.g)==="act"){ AD.bup={n:(AD.bup&&AD.bup.n||0)+t.upg,target:t.upgT||null}; if(AD.open) setTimeout(()=>{ if(AD.open) renderAD(); },0); }
+    else if(t.upg){ if(seat===S.me||S.auto) openUpgrade(seat,t.upg,t.upgT?(t.upgT.card?"bonus upgrade z kupionej technologii":"bonus upgrade z odkrytego terytorium"):"bonus upgrade",t.upgT); }
     if(t.warTo!==undefined&&!t.limitHit&&!t.pick&&!t.upg) UI.toast(`Ikona wojny: znacznik wojny przesunięty na pole ${t.warTo}${t.warTo===4?" – w fazie statusu wojny będzie konflikt!":""}.`);
     else if(t.limitHit) UI.toast(`Limit kart imperialnych na ręce: ${t.limitHit}. Karty nie dobrano.`);
     else if(t.msg&&!t.pick&&!t.upg) UI.toast(t.msg); else if(t.gotImp&&!t.pick&&!t.upg) UI.toast(`${t.gotImp===1?"Karta imperialna trafiła":`${t.gotImp} karty imperialne trafiły`} do ręki gracza ${seatName(seat)}.`); };
@@ -1184,11 +1192,13 @@ function costHTML(d){ const parts=Object.keys(d).filter(k=>d[k]).map(k=>RK(k,(d[
 
 const AD={open:false};
 let AH=[];
-function openField(k,seat,pawn){ Object.assign(AD,{open:true,k,seat,pawn,used:{},trades:0,sub:0,ws:[],v:1,ki:null,src:null,wk:null,barH:undefined,dipEnd:false,trFixed:false,viaSha:false,kiTwo:null,kiEx:null,kiPick:null,kiSel:undefined,trType:null});
+/* komunikat (bonus, premia) w polu komentarza na dole okna akcji zamiast dymka */
+function adNote(txt){ if(AD.open){ AD.msg=txt; setTimeout(()=>{ if(AD.open) renderAD(); },0); } else UI.toast(txt); }
+function openField(k,seat,pawn){ Object.assign(AD,{open:true,msg:"",mini:false,kim:undefined,bup:null,k,seat,pawn,used:{},trades:0,sub:0,ws:[],v:1,ki:null,src:null,wk:null,barH:undefined,dipEnd:false,trFixed:false,viaSha:false,kiTwo:null,kiEx:null,kiPick:null,kiSel:undefined,trType:null});
   /* Handlarz: ruch karawany wykonuje się sam po postawieniu ambasadora (raz na pionek w rundzie) */
   const p=pawn&&S.g.pieces[pawn];
   if(k==="tra"&&p&&p.k==="amb"){ AD.trType=TRA_ROW[slotOf("tra","amb",p.x,p.y)]; AD.trFixed=true; }
-  if(k==="tra"&&p&&p.trc!==roundOf(S.g)){ const t=tx(seat); txCaravan(t,seat,1); t.patch.pieces[pawn]={...(t.patch.pieces[pawn]||{}),trc:roundOf(S.g)}; t.before.pieces[pawn]={...(t.before.pieces[pawn]||{}),trc:p.trc||null}; t.go("Handlarz: automatyczny ruch karawany"); UI.toast(`Handlarz: karawana na polu ${carOf(seat)} – ${(t.notes||[]).join(", ")}`); }
+  if(k==="tra"&&p&&p.trc!==roundOf(S.g)){ const t=tx(seat); txCaravan(t,seat,1); t.patch.pieces[pawn]={...(t.patch.pieces[pawn]||{}),trc:roundOf(S.g)}; t.before.pieces[pawn]={...(t.before.pieces[pawn]||{}),trc:p.trc||null}; t.go("Handlarz: automatyczny ruch karawany"); adNote(`Handlarz: karawana na polu ${carOf(seat)} – ${(t.notes||[]).join(", ")}.`); }
   renderAD(); requestAnimationFrame(()=>{ if(AD.open) Cam.preset("p"+seatIdx(seat)); }); }
 function closeAD(){ AD.open=false; AD.ki=null; AD.src=null; closeCF(); const el=document.getElementById("act"); if(el) el.hidden=true; TG={}; renderTargets(); if(S.built) Table.renderHand(); renderMkBar(); }
 /* tor kart (rynek) zawsze na górze nad planszą gracza; w czasie akcji dostępne karty są podświetlone */
@@ -1218,7 +1228,7 @@ function opt(label,delta,fn,o={}){
   const plan=payPlan(AD.seat,delta), lack=plan.ok?[]:Object.keys(delta).filter(r=>delta[r]<0&&(res[r]||0)+delta[r]<0);
   const done=o.key&&AD.used[o.key];
   if(o.tg){ if(done||o.dis) return ""; if(KIOV&&!KIOV.hit) return "";
-    const mk=regT(o.tg,{label:KIOV?kiLab()+(o.vl?" · "+o.vl:""):(o.vl||label),ico:o.ico||"",vm:o.vm,delta:plan.d,joker:plan.joker?plan.jtxt:"",run,gain:o.gain||"",lack,wk:!!o.wk,pre:KIOV?KIOV.j:undefined,kt:KIOV?KIOV.txt:""});
+    const mk=regT(o.tg,{label:KIOV?kiLab()+(o.vl?" · "+o.vl:""):(o.vl||label),ico:o.ico||"",vm:o.vm,delta:plan.d,joker:plan.joker?plan.jtxt:"",run,gain:o.gain||"",lack,wk:!!o.wk,pre:KIOV?KIOV.j:undefined,kt:KIOV?KIOV.txt:"",ctx:KIOV?KIOV.ctx:undefined,vl:o.vl||""});
     if(o.spk&&!KIOV) specAvail(AD.seat,o.spk).forEach(sp=>{ const d2={...delta}; d2.s=Math.min(0,(d2.s||0)+sp.n); if(!d2.s) delete d2.s;
       const run2=()=>{ if(cantPay(AD.seat,d2)) return; const pp=payPlan(AD.seat,d2), t=tx(AD.seat); for(const r in pp.d) t.res(r,pp.d[r]); if(pp.joker) t.note(`chwała jako joker za ${pp.jtxt}`); if(fn) fn(t); t.top("spUsed",{[sp.id]:AD.seat},{[sp.id]:null});
         t.go((o.log||label)+` (właściwość karty ${sp.nm}: −${sp.n} kam., jednorazowo)`); if(o.key) AD.used[o.key]=true; if(AD.sub>0&&o.main) AD.sub--; if(o.after) o.after(); renderAD(); };
@@ -1236,7 +1246,7 @@ const sec=(title,body,note)=>{ if(KIOV){ KIOV.hit=false; return ""; }
   if(!t&&!b){ const w=pickMsgs(body); return w?`<div class="bsec"><span class="bt">${title}</span>${w}</div>`:""; }
   const ic=secIco(title);
   return `<div class="bsec${t?" tg":""}"><span class="bt">${ic?`<img class="sico" src="${asset("ico/"+ic+".png")}" alt="">`:""}${title}${t?' <em>– wybierz na planszy</em>':""}</span>${b?`<span class="bb">${body}</span>`:pickMsgs(body)}</div>`; };
-const SEC_ICO=[[/Odkryj|odkryci/,"disc"],[/populacj/i,"pop"],[/terytori/,"axe"],[/cywiln/,"civ"],[/militarn|wojownik/i,"mil"],[/fort/i,"fort"],[/technologi/i,"tech"],[/cud/i,"won"],[/Karawan|karawan/,"camel"],[/kart[ęa] imperialn/,"crown"],[/chwał/,"glory"]];
+const SEC_ICO=[[/Odkryj|odkryci/,"disc"],[/populacj/i,"pop"],[/terytori/,"axe"],[/cywiln/,"civ"],[/militarn|wojownik/i,"mil"],[/fort/i,"fort"],[/technologi/i,"tech"],[/cud/i,"won"],[/Karawan|karawan/,"camel"],[/kart[ęa] imperialn/,"crown"],[/chwał/,"glory"],[/^Upgrade/,"upg"]];
 const secIco=t=>{ const m=SEC_ICO.find(([r])=>r.test(String(t))); return m?m[1]:""; };
 const FIELD_ICO={bld:"axe",exp:"disc",phi:"tech",gov:"civ",bis:"won",arc:"won",war:"mil",tra:"camel",kpop:"pop",evc:"civ"};
 /* okno akcji: pływające, przesuwane za nagłówek; pozycja zapamiętana w tej przeglądarce */
@@ -1251,20 +1261,34 @@ function placeAct(el){ const host=el.parentNode; if(!host) return; const W=host.
       hd.addEventListener("pointermove",mv); hd.addEventListener("pointerup",up); }); } }
 const evNote=(txt)=>txt?`<p class="evn">Wydarzenie „${esc(curEventName())}”: ${txt}</p>`:"";
 
+/* odkrycie terytorium j: plemię do zapasu, bonus spod plemienia, bonusy terytorium */
+function doDiscover(tt,s,j){ const t=TERR[j]; tt.piece(`tri_${s}_${j}`,...traySpot(s));
+  if(leadOf(s)===275){ txCaravan(tt,s,1); const nd=discovered(s).filter(Boolean).length+1; if(nd%2===0){ txStr(tt,s,1); tt.note("Attyla: +1 siły za 2 odkryte terytoria"); } } const tb=tribeBonus(tt,s,j); if(tb){ tt.note(`pod plemieniem: ${TRIBE_TXT[tb]}`); adNote(`Pod plemieniem było: ${TRIBE_TXT[tb]}.`); } if(t.row===1){ txLevel(tt,s,"c",1); tt.upg=(tt.upg||0)+1; tt.upgT={terr:{c:t.c,row:t.row}}; } if(t.row===2&&t.c==="niebieskie") txLevel(tt,s,"car",1); if(t.row===2&&t.c==="szare") txStr(tt,s,2); }
+/* kolejne terytoria do odkrycia (najniższe nieodkryte w każdej kolumnie) */
+function nextTerrs(s){ const d=discovered(s); return ["szare","niebieskie"].map(c=>TERR.map((t,j)=>({t,j})).filter(x=>x.t.c===c&&!d[x.j]).sort((a,b)=>b.t.row-a.t.row)[0]).filter(Boolean); }
+function openFreeDisc(pid,p){ const el=dlg("fdiscdlg","Darmowe odkrycie terytorium"), s=p.s, L=nextTerrs(s);
+  if(!L.length){ pendDone(pid); return; }
+  el.innerHTML=`<header><div><h3>Darmowe odkrycie terytorium</h3><p class="an">${swatch(s)} ${esc(seatName(s))} · nagroda z kolonii. Wybierz terytorium (bez płacenia złota) albo zrezygnuj.</p></div></header>
+    <div class="ab">${L.map(({t,j})=>`<button class="ao" data-fd="${j}"><span class="al">${esc(terrNm(t.c,t.row))}</span><span class="ac"><span class="chip free">bez kosztu</span></span><span class="ag">bonus: ${esc(t.bonus||"")}</span></button>`).join("")}</div>
+    <div class="row"><button class="btn" id="fdNo">Rezygnuję</button></div>`;
+  el.hidden=false;
+  el.querySelector("#fdNo").onclick=()=>{ el.hidden=true; pendDone(pid); };
+  el.querySelectorAll("[data-fd]").forEach(b=>b.onclick=()=>{ const j=+b.dataset.fd, t=tx(s); doDiscover(t,s,j); t.patch.pend={...(t.patch.pend||{}),[pid]:null}; t.before.pend={...(t.before.pend||{}),[pid]:p}; el.hidden=true; t.go(`darmowo odkrywa terytorium (${terrNm(TERR[j].c,TERR[j].row).toLowerCase()}) – nagroda z kolonii`); }); }
 function secDiscover(disc,o={}){
   const s=AD.seat, d=discovered(s), ed=evDisc("disc");
   /* odkrywa się po kolei od dołu: w każdej kolumnie najpierw poziom 1, potem 2, potem 3 */
   const list=["szare","niebieskie"].map(c=>TERR.map((t,j)=>({t,j})).filter(x=>x.t.c===c&&!d[x.j]).sort((a,b)=>b.t.row-a.t.row)[0]).filter(Boolean);
   if(!list.length) return sec("Odkryj terytorium","<p class='an'>Wszystkie terytoria są już odkryte.</p>");
+  if(o.key&&AD.used[o.key]&&!KIOV) return sec("Odkryj terytorium",`<p class="okmsg">✓ Terytorium odkryte.</p>`);
   const K=kd(s,["d","ag"]);
   return sec(`Odkryj terytorium${disc?` (−${disc} złota)`:""}`, evNote(ed?`odkrycie o ${ed} złoto taniej`:"")+kiNote(K,"zł")+list.map(({t,j})=>opt(terrNm(t.c,t.row),{g:-Math.max(0,t.disc-disc-ed-K.n)},
-    tt=>{ kc(tt,s,K.k); tt.piece(`tri_${s}_${j}`,...traySpot(s));
-      if(leadOf(s)===275){ txCaravan(tt,s,1); const nd=discovered(s).filter(Boolean).length+1; if(nd%2===0){ txStr(tt,s,1); tt.note("Attyla: +1 siły za 2 odkryte terytoria"); } } const tb=tribeBonus(tt,s,j); if(tb){ tt.note(`pod plemieniem: ${TRIBE_TXT[tb]}`); UI.toast(`Pod plemieniem było: ${TRIBE_TXT[tb]}`); } if(t.row===1){ txLevel(tt,s,"c",1); tt.upg=(tt.upg||0)+1; tt.upgT={terr:{c:t.c,row:t.row}}; } if(t.row===2&&t.c==="niebieskie") txLevel(tt,s,"car",1); if(t.row===2&&t.c==="szare") txStr(tt,s,2); },
+    tt=>{ kc(tt,s,K.k); doDiscover(tt,s,j); },
     {...o,vl:"Odkryj",ico:AICO.disc,tg:{ai:"disc",k:`d:${t.c}:${t.row}`,r:terrRect(s,t.c,t.row),nm:"Odkryj terytorium: "+terrNm(t.c,t.row)},log:`odkrywa terytorium (${terrNm(t.c,t.row).toLowerCase()}) i bierze plemię`,gain:`Bonus terytorium: ${t.bonus}. Pod plemieniem czeka losowy bonus (kamień, energia, wpływ, złoto, karawana albo karta imperialna). Plemię trafia do zapasu.`})).join(""));
 }
 function secPop(disc,o={}){
   const s=AD.seat, n=nextPop(s), ed=evDisc("pop");
   if(!n) return sec("Zwiększ populację","<p class='an'>Tor populacji jest pusty.</p>");
+  if(o.key&&AD.used[o.key]&&!KIOV) return sec("Zwiększ populację",`<p class="okmsg">✓ Populacja zwiększona.</p>`);
   const K=o.free?{n:0,k:null}:kd(s,["p"]); const ram=!o.free&&leadOf(s)===273&&(S.g.players[s].ramR||0)!==roundOf(S.g)?1:0;
   const cost=o.free?0:Math.max(0,POP_COST[n.j]-disc-ed-K.n-ram), gen=(n.j===3||n.j===6);
   return sec(`Zwiększ populację${disc?` (−${disc} energii)`:""}`, evNote(ed?`populacja o ${ed} energię taniej`:"")+kiNote(K,"energii")+(ram?`<p class="evn">Lider Ramzes II: populacja o 1 energię taniej (raz na rundę).</p>`:"")+opt(`Weź ${gen?"geniusza":"robotnika"} z ${n.j+1}. miejsca`,{e:-cost},
@@ -1291,7 +1315,7 @@ function secBuy(title,disc,o={}){
     const bp=payPlan(s,{g:-price}), lack=bp.ok?[]:["g"];
     const gain=[T.t==="w"?`Cud: ${T.st?T.st.length:"?"} ${T.st&&T.st.length<5?"etapy":"etapów"} budowy, po ukończeniu: ${T.end||prodText(T.p)}`:(T.p?`Za robotnika: ${prodText(T.p)} (koszt robotnika: ${T.cost||0} kam.)`:""),
       m.row===0?"karta imperialna do ręki":"", T.b==="h"?"bonus: chwała":"", T.b==="u"?"bonus: upgrade robotnika":"", e2?`wydarzenie: −${e2} zł`:"", disc?`pole: −${disc} zł`:""].filter(Boolean).join(" · ");
-    h+=regT({ai:T.t==="w"?"won":"tech",k:"m:"+m.id,nm:T.nm||DECK_ONE[m.c.k],img:faceSrc(m.c.k,m.c.n)},{label:(KIOV?kiLab():`${title}: ${m.price} zł na rynku`)+(T.t==="w"&&wondersOf(s).some(W=>W.built<W.st.length)?` – uwaga: niedokończony cud ${wondersOf(s).filter(W=>W.built<W.st.length).map(W=>W.nm).join(", ")} odpadnie`:""),delta:bp.d,joker:bp.joker?bp.jtxt:"",run,lack,gain,pre:KIOV?KIOV.j:undefined,kt:KIOV?KIOV.txt:""}); });
+    h+=regT({ai:T.t==="w"?"won":"tech",k:"m:"+m.id,nm:T.nm||DECK_ONE[m.c.k],img:faceSrc(m.c.k,m.c.n)},{label:(KIOV?kiLab():`${title}: ${m.price} zł na rynku`)+(T.t==="w"&&wondersOf(s).some(W=>W.built<W.st.length)?` – uwaga: niedokończony cud ${wondersOf(s).filter(W=>W.built<W.st.length).map(W=>W.nm).join(", ")} odpadnie`:""),delta:bp.d,joker:bp.joker?bp.jtxt:"",run,lack,gain,pre:KIOV?KIOV.j:undefined,kt:KIOV?KIOV.txt:"",ctx:KIOV?KIOV.ctx:undefined}); });
   return sec(title+(disc?` (−${disc} złota)`:""),h);
 }
 const inMarket=c=>c&&c.z==="table"&&c.x>MARKET.x&&c.x<MARKET.x+MARKET.w&&c.y>MARKET.y&&c.y<MARKET.y+MARKET.h;
@@ -1345,7 +1369,7 @@ function freeHint(s,o){ const f=freeWorkers(s), done=o&&o.key&&AD.used[o.key];
   return f.length||AD.src? "" : `<p class="awarn">Brak wolnego robotnika – kliknij robotnika stojącego na planszy, żeby go przenieść.</p>`; }
 /* wykonuje upgrade robotnika (przesunięcie z niższego poziomu na wyższy) w jednej transakcji */
 function applyUpgrade(t,s,u){ /* koszt płaci opcja (opt) */ const n=workersOn(s,u.hi.rect).length;
-  t.piece(u.w,...terrSpot(s,u.hi.terr.c,u.hi.terr.row,n));
+  if(u.hi.terr) t.piece(u.w,...terrSpot(s,u.hi.terr.c,u.hi.terr.row,n)); else { const off=SPOT_OFF[n%SPOT_OFF.length]; t.piece(u.w,u.hi.cx+off[0],u.hi.cy+off[1]); }
   for(const k in u.dp){ if(k==="str") txStr(t,s,u.dp[k]); else txLevel(t,s,k,u.dp[k]); }
   const up={g:0,i:0,...(S.g.players[s].upk||{})}; let ch=false; ["g","i"].forEach(k=>{ const d=((u.hi.up||{})[k]||0)-((u.lo.up||{})[k]||0); if(d){ up[k]+=d; ch=true; } }); if(ch) t.pl("upk",up);
   return t; }
@@ -1357,8 +1381,8 @@ function secSendTerr(mode,o={}){
     modes.forEach(m=>rows.push(opt(terrNm(c,row),discDelta(base,m,ed),tt=>{ kc(tt,s,K.k); sendWorker(tt,s,{kind:"terr",c,row,p:{[rk]:pr}}); },
       {...o,spk:"tr",dis:o.dis||noW,vl:m?"Nowy robotnik · "+VLAB[m]:"Nowy robotnik",vm:m||undefined,ico:AICO.wrk(s),wk:true,tg:{ai:"axe",k:`t:${c}:${row}`,r:terrRect(s,c,row),nm:terrNm(c,row)},log:`wysyła robotnika na terytorium (${terrNm(c,row).toLowerCase()})`,gain:`${AICO.gear}${RK(rk,"+"+pr)} &nbsp; <span title="robotników na polu">${AICO.wrk(s).replace('class="aico"','class="aico sm"')}×${nOn}</span>`})));
     /* upgrade z niższego poziomu tej samej kolumny – w tym samym oknie obok budowy nowego robotnika */
-    upgradesOf(s).filter(u=>u.hi.terr&&u.hi.terr.c===c&&u.hi.terr.row===row).forEach(u=>rows.push(opt(`Upgrade z ${terrNm(u.lo.terr.c,u.lo.terr.row)} → ${terrNm(c,row)}`,{s:-u.cost},tt=>applyUpgrade(tt,s,u),
-      {...o,spk:"tr",dis:o.dis||(u.cost>((S.g.players[s].res||{}).s||0)),vl:`Upgrade z poziomu ${4-u.lo.terr.row}`,ico:AICO.upg,tg:{ai:"axe",k:`t:${c}:${row}`,r:terrRect(s,c,row),nm:terrNm(c,row)},log:`upgrade robotnika (${terrNm(u.lo.terr.c,u.lo.terr.row).toLowerCase()} → ${terrNm(c,row).toLowerCase()})`,gain:`${AICO.gear}${Object.keys(u.dp).filter(k=>u.dp[k]).map(k=>RK(k,(u.dp[k]>0?"+":"")+u.dp[k])).join("")||"bez zmiany produkcji"}`}))); } });
+    upgradesOf(s).filter(u=>u.hi.terr&&u.hi.terr.c===c&&u.hi.terr.row===row).forEach(u=>modes.forEach(m=>rows.push(opt(`Upgrade z ${terrNm(u.lo.terr.c,u.lo.terr.row)} → ${terrNm(c,row)}`,discDelta(u.cost,m,ed),tt=>{ kc(tt,s,K.k); applyUpgrade(tt,s,u); },
+      {...o,spk:"tr",vm:m||undefined,vl:`Upgrade z poziomu ${4-u.lo.terr.row}`+(m?" · "+VLAB[m]:""),ico:AICO.upg,tg:{ai:"axe",k:`t:${c}:${row}`,r:terrRect(s,c,row),nm:terrNm(c,row)},log:`upgrade robotnika (${terrNm(u.lo.terr.c,u.lo.terr.row).toLowerCase()} → ${terrNm(c,row).toLowerCase()})`,gain:`${AICO.gear}${Object.keys(u.dp).filter(k=>u.dp[k]).map(k=>RK(k,(u.dp[k]>0?"+":"")+u.dp[k])).join("")||"bez zmiany produkcji"}`})))); } });
   return sec("Wyślij robotnika na terytorium",freeHint(s,o)+rows.join(""));
 }
 /* wysyłanie robotnika na technologię z listy kart gracza; kind: "civ" | "mil" */
@@ -1371,11 +1395,16 @@ function secTech(kind,mode,o={}){
     modes.forEach(m=>rows.push(opt(`${T.nm}`,discDelta(T.cost,m,ed),tt=>{ kc(tt,s,K.k); sendWorker(tt,s,{kind:"tech",T}); if(o.onT) o.onT(tt); },{...o,spk:kind==="civ"?"c":"m",dis:o.dis||noW,vl:modes.length>1?VLAB[m]:"",vm:modes.length>1?m:undefined,ico:AICO.wrk(s),wk:true,
       tg:{ai:kind==="civ"?"civ":"mil",k:"c:"+T.id,r:T.rect,nm:(kind==="civ"?"Robotnik na: ":"Wojownik na: ")+T.nm,img:c?faceSrc(c.k,c.n):null},log:`wysyła robotnika na ${T.nm}${o.extra?" (bonus z wydarzenia)":""}`,
       gain:`${prodText(T.p)} za robotnika · koszt z karty: ${T.cost} · robotników na karcie: ${nOn}${T.up?` · utrzymanie: −${Object.keys(T.up).map(k=>T.up[k]+" "+RES_INFO[k][0]).join(", ")} na rundę`:""}`}))); });
+  /* upgrade na wyższą kartę tej samej linii (zniżka pola i karty odejmuje się od różnicy kosztów) */
+  const ids=new Set(list.map(T=>T.id));
+  upgradesOf(s).filter(u=>!u.hi.terr&&ids.has(u.hi.id)).forEach(u=>{ const c=S.g.cards[u.hi.id]; modes.forEach(m=>rows.push(opt(`Upgrade ${u.lo.nm} → ${u.hi.nm}`,discDelta(u.cost,m,ed),tt=>{ kc(tt,s,K.k); applyUpgrade(tt,s,u); },
+    {...o,spk:kind==="civ"?"c":"m",vm:modes.length>1?m:undefined,vl:`Upgrade z ${u.lo.nm}`+(modes.length>1?" · "+VLAB[m]:""),ico:AICO.upg,tg:{ai:kind==="civ"?"civ":"mil",k:"c:"+u.hi.id,r:u.hi.rect,nm:(kind==="civ"?"Robotnik na: ":"Wojownik na: ")+u.hi.nm,img:c?faceSrc(c.k,c.n):null},log:`upgrade robotnika (${u.lo.nm} → ${u.hi.nm})`,gain:`${AICO.gear}${Object.keys(u.dp).filter(k=>u.dp[k]).map(k=>RK(k,(u.dp[k]>0?"+":"")+u.dp[k])).join("")||"bez zmiany produkcji"}`}))); });
   return sec(title,freeHint(s,o)+rows.join(""));
 }
 function secWonder(mode,o={}){
   const s=AD.seat, list=wondersOf(s).filter(W=>W.built<W.st.length);
   if(!list.length) return sec("Zbuduj etap cudu","<p class='an'>Nie masz cudu do budowy. Cud kupuje się u Biskupa.</p>");
+  if(o.key&&AD.used[o.key]&&!KIOV) return sec("Zbuduj etap cudu",`<p class="okmsg">✓ Etap cudu zbudowany.</p>`);
   const K=kd(s,["ws","as"]), modes=(mode===2||o.variants)?[1,2]:[mode]; const rows=[];
   list.forEach(W=>{ const cost=W.st[W.built]; const ext={d:0,src:""}, c=S.g.cards[W.id];
     modes.forEach(m=>rows.push(opt(`${W.nm}: etap ${W.built+1} z ${W.st.length}`,discDelta(cost,m,ext.d+K.n),tt=>{ kc(tt,s,K.k); buildStage(tt,s,W,ext); },{...o,spk:"ws",vl:modes.length>1?VLAB[m]:"",vm:modes.length>1?m:undefined,
@@ -1405,7 +1434,7 @@ function pairBonus(other,text,fn){
   /* premia pary wykonuje się sama (raz na rundę dla tej pary pól), z komunikatem */
   const key=`${roundOf(S.g)}_${AD.seat}_${AD.k}`; if((S.g.pairB||{})[key]) return "";
   const s=AD.seat, f=AD.k; setTimeout(()=>{ if((S.g.pairB||{})[key]) return; const t=tx(s); t.top("pairB",{[key]:1},{[key]:null}); fn(t);
-    t.go(`premia pary (${FIELDS[f].n} + ${FIELDS[other].n}): ${text.toLowerCase()}`); UI.toast(`Premia pary ${FIELDS[f].n} + ${FIELDS[other].n}: ${text.toLowerCase()}.`); if(AD.open) renderAD(); },0);
+    t.go(`premia pary (${FIELDS[f].n} + ${FIELDS[other].n}): ${text.toLowerCase()}`); adNote(`Premia pary ${FIELDS[f].n} + ${FIELDS[other].n}: ${text.toLowerCase()}.`); if(AD.open) renderAD(); },0);
   return "";
 }
 function renderAD(){
@@ -1442,7 +1471,7 @@ function renderAD(){
           `<div class="bsec hint"><span class="bt">Do tego 1 dowolna akcja główna – kliknij podświetlone miejsce albo kartę.</span></div>`; }
       break; }
     case "kia": body=""; break;
-    case "kitaken": { const occ=Object.keys(FIELDS).filter(f=>pawnsOn(f).length);
+    case "kitaken": { const occ=Object.keys(FIELDS).filter(f=>f!=="sha"&&f!=="ws"&&pawnsOn(f,"amb").length);
       body=sec("Wybierz zajęte pole",occ.length?occ.map(f=>act(FIELDS[f].n,()=>openField(f,s,null))).join(""):"<p class='an'>Żadne pole nie jest zajęte.</p>","Otworzą się opcje wybranego pola (bez stawiania pionka)."); break; }
     case "kiex": { const o=AD.kiEx; if(o){ const na=nv(o.na), nb=nv(o.nb);
       body=sec("Wymiana",opt(`${na} ${RNAME[o.a]} → ${nb} ${RNAME[o.b]}`,{[o.a]:-na,[o.b]:nb},null,{key:"ex",log:`wymienia ${na} ${RNAME[o.a]} na ${nb} ${RNAME[o.b]} (karta imperialna)`})+
@@ -1473,13 +1502,12 @@ function renderAD(){
       break; }
     case "tra": {
       const max=2+era, left=max-AD.trades, tb=traderBonus(s);
-      const T=(l,d,fn)=>opt(l,d,fn,{trade:true,dis:left<=0,log:`wymienia u Handlarza: ${l.toLowerCase()}`});
+      const hasTB=tb.d&&Object.keys(tb.d).length; const T=(l,d,fn)=>opt(l,d,t=>{ if(fn) fn(t); if(hasTB&&!AD.trades&&!AD.used.trader){ for(const r in tb.d) t.res(r,tb.d[r]); t.note(`premia Handlarza: ${resTxt(tb.d)} (${tb.src.join(", ")})`); AD.used.trader=true; } },{trade:true,dis:left<=0,log:`wymienia u Handlarza: ${l.toLowerCase()}`,gain:hasTB&&!AD.used.trader?`Po pierwszej wymianie premia: ${resTxt(tb.d)} (${tb.src.join(", ")}).`:""});
       const TT=[["a","Wpływ ⇄ kamień albo energia",()=>T("Wpływ → kamień",{i:-1,s:1})+T("Wpływ → energia",{i:-1,e:1})+T("Kamień → wpływ",{s:-1,i:1})+T("Energia → wpływ",{e:-1,i:1})],
         ["b","Złoto ⇄ kamień i energia",()=>T("Złoto → kamień i energia",{g:-1,s:1,e:1})+T("Kamień i energia → złoto",{s:-1,e:-1,g:1})],
         ["c","Złoto i wpływ → karta imperialna",()=>T("Złoto i wpływ → karta imperialna",{g:-1,i:-1},t=>t.imp())]];
       const car=pawn&&pawn.trc===roundOf(g);
       body=sec("Karawana",car?`<p class="okmsg">✓ Ruch karawany wykonany automatycznie (karawana na polu ${carOf(s)}).</p>`:opt("Ruch karawany",{},t=>{ txCaravan(t,s,1); if(AD.pawn) t.patch.pieces[AD.pawn]={...(t.patch.pieces[AD.pawn]||{}),trc:roundOf(S.g)}; },{log:"przesuwa karawanę (Handlarz)"}))+
-        (tb.d&&Object.keys(tb.d).length?sec("Premia „TRADER”",opt(`Weź premię (${tb.src.join(", ")})`,tb.d,null,{key:"trader",log:`premia TRADER: ${tb.src.join(", ")}`})):"")+
         (!AD.trType? sec(`Wymiany: wybierz jeden rodzaj (w erze ${ERA_PL[era]}: ${max} wymiany tego rodzaju)`,TT.map(([id,nm])=>act(nm,()=>{ AD.trType=id; })).join(""))
           : sec(`Wymiany: ${TT.find(x=>x[0]===AD.trType)[1]} · pozostało ${Math.max(0,left)} z ${max}`,TT.find(x=>x[0]===AD.trType)[2]()+(AD.trades||AD.trFixed?"":act("Zmień rodzaj wymiany",()=>{ AD.trType=null; })),"Każdą wymianę wybierasz osobno; kierunek może być różny.") )+
         sec("Dowolna akcja",AD.sub>0||AD.used.any1?"<p class='an'>Dowolna akcja główna – sekcje na górze okna.</p>":act("Wykonaj 1 dowolną akcję główną",()=>{ AD.sub=1; AD.used.any1=true; }),"Kolejność jest dowolna: wymiany, akcja dowolna i karta imperialna w dowolnym porządku.");
@@ -1495,7 +1523,7 @@ function renderAD(){
       if(AD.ws.includes("A")) body+=`<div class="bsec hint"><span class="bt"><b>A:</b> ${AD.sub>0?"dowolna akcja główna – kliknij podświetlone miejsce albo kartę":"dowolna akcja główna wykonana ✓"}</span></div>`;
       if(AD.ws.includes("B")){ const lim=impLimit(levelOf(s,"i")), full=handImp(s)>=lim; body+=sec("B",AD.used.wsB?`<p class="okmsg">✓ Karta imperialna wzięta</p>`:full?`<p class="awarn">Masz już limit kart imperialnych na ręce (${lim}) – karty nie można wziąć.</p>`:opt("Weź kartę imperialną",{},t=>t.imp(),{key:"wsB",log:"bierze kartę imperialną (Warsztaty)"})); }
       const wsHint=`<div class="bsec hint"><span class="bt">Bez limitu: wysyłasz po jednym robotniku – kliknij podświetlone miejsce; po każdym miejsca podświetlą się znowu, dopóki masz kamienie i robotników (kamień: ${res.s||0}, wolni robotnicy: ${freeWorkers(s).length}).</span></div>`;
-      const wsAfter=()=>UI.toast(`Robotnik wysłany. Możesz wysłać kolejnego (kamień: ${(S.g.players[s].res||{}).s||0}, wolni robotnicy: ${freeWorkers(s).length}) albo kliknij „Koniec ruchu”.`);
+      const wsAfter=()=>adNote(`Robotnik wysłany. Możesz wysłać kolejnego (kamień: ${(S.g.players[s].res||{}).s||0}, wolni robotnicy: ${freeWorkers(s).length}) albo kliknij „Koniec ruchu”.`);
       if(AD.ws.some(x=>"CDE".includes(x))) body+=wsHint;
       if(AD.ws.includes("C")) body+=secTech("civ",0,{after:wsAfter});
       if(AD.ws.includes("D")) body+=secSendTerr(0,{after:wsAfter});
@@ -1506,6 +1534,12 @@ function renderAD(){
       if(AD.used.wsPop) body+=secPop(0,{});
       break; }
   }
+  /* bonus upgrade (z kupionej technologii albo odkrytego terytorium) – w tym samym oknie */
+  if(AD.bup&&AD.bup.n>0){ const TG2=AD.bup.target, st=(g.players[s].res||{}).s||0;
+    const L=upgradesOf(s).filter(u=>!TG2||(TG2.card?u.hi.id===TG2.card:(u.hi.terr&&u.hi.terr.c===TG2.terr.c&&u.hi.terr.row===TG2.terr.row)));
+    body+=sec("Upgrade (bonus)",L.length?L.map(u=>{ const c=u.hi.id&&g.cards[u.hi.id]; return opt(`Upgrade ${u.lo.nm} → ${u.hi.nm}`,{s:-u.cost},tt=>applyUpgrade(tt,s,u),{ico:AICO.upg,vl:"Upgrade",after:()=>{ AD.bup.n--; },
+      tg:{ai:u.hi.terr?"axe":"civ",k:"bu:"+(u.hi.id||u.hi.terr.c+u.hi.terr.row)+":"+u.w,r:u.hi.rect,nm:`${u.lo.nm} → ${u.hi.nm}`,img:c?faceSrc(c.k,c.n):null},log:`upgrade robotnika – bonus (${u.lo.nm} → ${u.hi.nm})`,
+      gain:`${AICO.gear}${Object.keys(u.dp).filter(k=>u.dp[k]).map(k=>RK(k,(u.dp[k]>0?"+":"")+u.dp[k])).join("")||"bez zmiany produkcji"}`}); }).join(""):`<p class="an">Upgrade niemożliwy (brak robotnika na niższym poziomie) – przepada.</p>`); }
   return body; };
   GRP=[]; GRPN=REGN;
   const body=build(), mainSec= AD.sub>0? secMain() : "", kiSec=secKI(); const groups=GRP; GRP=null;
@@ -1518,14 +1552,17 @@ function renderAD(){
     K.act.forEach((o,j)=>{ let n0=REGN;
       if(o.t==="disc"){ KIOV={s,k:o.a,n:nv(o.n),j,ctx:"field",hit:false,txt:kiOptText(o)}; build(); if(AD.sub>0) secMain(); KIOV.ctx="sep"; KIOV.hit=false; kiSepSecs(o.a,k); KIOV=null; }
       const ents=[]; for(const key in TG) TG[key].e.forEach(e=>{ if(e.pre===j&&e._n>n0) ents.push(e); });
-      kiOpts.push({j,o,txt:kiOptText(o),ents,direct:!(o.t==="disc"&&ents.length),ok:!(o.t==="disc")||ents.some(e=>!e.lack.length)}); }); }
+      const okE=ents.filter(e=>!e.lack.length), fld=okE.filter(e=>e.ctx==="field"), sep=okE.filter(e=>e.ctx==="sep");
+      /* karta ochrony: kolonizacja/wojna tylko w swoich fazach – nie do ambasadora */
+      const show= o.t==="disc"? okE.length>0 : !["col","war"].includes(o.t)&&!(o.t==="res"&&false);
+      kiOpts.push({j,o,txt:kiOptText(o),ents:okE,fld,sep,show,direct:o.t!=="disc"}); }); }
   const avail=G=>G.ents.some(e=>!e.lack.length)||/<button(?![^>]*disabled)[^>]*data-h/.test(G.body);
   const shown=groups.filter(avail);
   if(AD.grp&&!shown.some(G=>G.title===String(AD.grp).split("#")[0])) AD.grp=null;
   const RG={złot:"g",kamie:"s",energi:"e",wpływ:"i"}, RGEN={g:"złota",s:"kamienia",e:"energii",i:"wpływu"};
   const ACTN={disc:"odkrycie terytorium",pop:"zwiększenie populacji",axe:"wysłanie robotnika na terytorium",civ:"wysłanie robotnika na technologię cywilną",mil:"akcję militarną",tech:"zakup technologii",won:"cud",crown:"kartę imperialną",camel:"karawanę"};
   const disc=t=>{ const m=/\(−(\d+) (złot|kamie|energi|wpływ)/.exec(t); return m?{n:+m[1],r:RG[m[2]]}:null; };
-  const icoHTML=(ic,cls)=>ic==="glory"?RK("h",""):ic?`<img class="${cls||"tico"}" src="${asset("ico/"+ic+".png")}" alt="">`:"";
+  const icoHTML=(ic,cls)=>ic==="upg"?AICO.upg:ic==="glory"?RK("h",""):ic?`<img class="${cls||"tico"}" src="${asset("ico/"+ic+".png")}" alt="">`:"";
   const plain=t=>String(t||"").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
   const helpOf=G=>{ const d=disc(G.title); let base=plain(G.title).replace(/\s*\(−[^)]*\)/,"");
     if(/^(Dodatkowo|Wybierz)/.test(base)){ const L=[...String(G.body).matchAll(/<span class="al">([^<]*)<\/span>/g)].map(m=>m[1]); if(L.length) base=L.join(" albo "); }
@@ -1533,7 +1570,13 @@ function renderAD(){
   const tile=(id,ic,chip,label,help,on,sel,off)=>`<button class="atile ${sel?"sel":""} ${off?"off":""}" data-h="${id}" data-help="${esc(help)}" ${on||off?"":"disabled"} ${off?'aria-disabled="true"':""}>${chip||""}${icoHTML(ic)||`<span class="tlab">${esc(label)}</span>`}</button>`;
   let tiles="";
   /* wykonanie jednej opcji (miejsca) – wspólne dla wierszy i kafelków „od razu” */
-  const runEnt=e=>{ if(cantPay(s,e.delta)) return; AD.wk=AD.src?null:(AD.wkSel||"wrk"); if(e.pre!==undefined&&AD.ki){ const id=AD.ki; AD.ki=null; AD.crown=false; AD.kij=undefined; Object.assign(KP,{open:false,id,ph:"act",seat:s,sel:{act:e.pre}}); playKI(); } e.run(); AD.wk=null; AD.grp=null; };
+  const runEnt=e=>{ if(cantPay(s,e.delta)) return; AD.wk=AD.src?null:(AD.wkSel||"wrk"); if(e.pre!==undefined&&(e.kid||AD.ki)){ const id=e.kid||AD.ki; AD.ki=null; AD.crown=false; AD.kij=undefined; Object.assign(KP,{open:false,id,ph:"act",seat:s,sel:{act:e.pre}}); playKI(); } e.run(); AD.wk=null; AD.grp=null; };
+  /* przy akcji pola: warianty „z kartą imperialną” dla kart z ręki, które mogą ją wzmocnić (wybór w chwili wykonywania akcji) */
+  const KIB={};
+  if(kiAllowed&&!AD.ki&&!kiUsedThisTurn(s)) handKI.forEach(id=>{ const c=g.cards[id], K=KI[c.n]||{act:[]};
+    K.act.forEach((o,j)=>{ if(o.t!=="disc") return; const n0=REGN; KIOV={s,k:o.a,n:nv(o.n),j,ctx:"field",hit:false,txt:kiOptText(o)}; build(); if(AD.sub>0) secMain(); KIOV=null;
+      for(const key in TG) TG[key].e.forEach(e=>{ if(e.pre===j&&e._n>n0&&!e.lack.length){ e.kid=id; e.kn=c.n; e.label=`Z kartą imperialną (−${nv(o.n)})`+(e.vl&&!/^Nowy robotnik$/.test(e.vl)?" · "+e.vl:""); const cst=x=>Object.values(x.delta||{}).reduce((a,v)=>a+(v<0?-v:0),0), base=TG[key].e.filter(b=>b.pre===undefined&&(b.vm||0)===(e.vm||0)&&(b.vl||"")===(e.vl||"")&&!b.lack.length);
+          if(base.length&&cst(e)>=Math.min(...base.map(cst))) return; if((KIB[key]||[]).some(x=>x.label===e.label&&JSON.stringify(x.delta)===JSON.stringify(e.delta))) return; (KIB[key]=KIB[key]||[]).push(e); } }); }); });
   const fw0=freeWorkers(s), needWk=fw0.some(id=>g.pieces[id].k==="gen")||!fw0.length;
   const VCH={1:RK("s","1"),2:RK("i","-1")+RK("s","2")};
   const BTN_RE=/<button class="(ao[^"]*|btn[^"]*)"([^>]*?) data-h="(\d+)"([^>]*)>([\s\S]*?)<\/button>/g;
@@ -1560,6 +1603,8 @@ function renderAD(){
       const isF=Object.values(FIELDS).some(F=>plain(lab).startsWith(F.n));
       tiles+=`<button class="atile ${/aria-pressed="true"/.test(m[3])?"sel":""}" data-h="${m[2]}" data-help="${esc(lab)}">${pic||cost}${pic?"":isF?`${icoHTML(ic)}<span class="tlab">${esc(short)}</span>`:icoHTML(ic)||(short?`<span class="tlab">${esc(short)}</span>`:"")}</button>`; }
     const cnt=/(pozostało \d+ z \d+|wybierz jeszcze: \d+|użycia Warsztatów: \d+ z 3)/.exec(plain(G.title)); if(cnt) tiles+=`<span class="tcount">${esc(cnt[1])}</span>`; });
+  /* akcje już wykonane: szara ikona z ✓ (akcje niemożliwe są ukryte) */
+  groups.filter(G=>!avail(G)&&G.ico&&/<p class="okmsg">/.test(G.body)).forEach(G=>{ const m=/<p class="okmsg">([\s\S]*?)<\/p>/.exec(G.body); tiles+=`<button class="atile off done" aria-disabled="true" data-help="${esc(plain(m?m[1]:"Wykonane"))}">${icoHTML(G.ico)}<span class="tdone">✓</span></button>`; });
   if(kiAllowed){ const used=kiUsedThisTurn(s), none=!handKI.length, off=used||none; if(off&&!AD.ki){ AD.crown=false; }
     const i=AH.length; AH.push(()=>{ if(off) return; AD.crown=!AD.crown; AD.grp=null; if(!AD.crown){ AD.ki=null; AD.kij=undefined; } });
     tiles+=tile(i,"crown","", "Karta imperialna", used?"Karta imperialna została już zagrana – w tej turze nie możesz zagrać kolejnej.":none?"Nie masz żadnych kart imperialnych na ręce.":"Zagraj kartę imperialną: kliknij ikonę, a potem kartę w ręce na dole.", !off, !off&&(AD.crown||!!AD.ki), off); }
@@ -1575,14 +1620,20 @@ function renderAD(){
     return h+`</div>`; };
   /* lista opcji (miejsc) w oknie: wiersz = miejsce, przyciski = warianty z kosztem */
   const MK=[];
-  const optRows=(ents,short)=>{ const byK={}; ents.forEach(e=>{ if(/^m:/.test(e._k)){ MK.push(e); return; } (byK[e._k]=byK[e._k]||[]).push(e); });
+  const optRows=(ents,short,kiR)=>{ const byK={}; if(!kiR){ const ks=new Set(ents.map(e=>e._k)); const vs=new Set(ents.map(e=>e.vm||0)); ents=ents.concat(Object.keys(KIB).filter(k=>ks.has(k)).flatMap(k=>KIB[k]).filter(e=>vs.size!==1||vs.has(e.vm||0))); } ents.forEach(e=>{ if(/^m:/.test(e._k)){ MK.push(e); return; } (byK[e._k]=byK[e._k]||[]).push(e); });
     let h=""; for(const key in byK){ const T=TG[key]; if(!T) continue;
       h+=`<div class="orow" data-help="${esc(plain(T.nm))}"><span class="onm">${T.img?`<img class="othumb" src="${T.img}" alt="">`:""}${esc(plain(T.nm||"").replace(/^(Robotnik na|Wojownik na|Odkryj terytorium): /,""))}</span><span class="obtns">${byK[key].map(e=>{ const i=AH.length;
-        AH.push(()=>runEnt(e)); const lab=short?String(e.label).replace(/ · Wariant:.*$/,"").replace(/^Wariant:.*$/,"Wykonaj"):e.label;
+        AH.push(()=>runEnt(e)); const lab=kiR?(String(e.label).replace(/^(Osobna akcja z karty|Tańsza akcja pola \(z kartą\))( · )?/,"").replace(/^Wariant: /,"")||"Wykonaj"):short?String(e.label).replace(/ · Wariant:.*$/,"").replace(/^Wariant:.*$/,"Wykonaj"):e.label;
         return `<button class="ao obtn ${e.lack.length?"lack":""}" data-h="${i}" ${e.lack.length?"disabled":""} data-help="${esc(plain(e.label)+(e.joker?` – brakuje ${e.joker}, zapłacisz chwałą`:"")+(e.lack.length?` – brakuje: ${e.lack.map(r=>RES_INFO[r][0]).join(", ")}`:""))}">${e.ico||""}<span class="al">${esc(lab)}</span><span class="ac">${costHTML(e.delta)}</span></button>`; }).join("")}</span></div>`; }
     if(MK.length) h+=`<p class="ohint">Wybierz kartę na torze kart u góry (podświetlone).</p>`;
     return h; };
   let detail="";
+  /* ponad limit kart imperialnych: odrzucenie w tym samym oknie (jedno okno naraz) */
+  const dPend=Object.keys(g.pend||{}).find(id=>{ const q=g.pend[id]; return q&&q.k==="discI"&&q.s===s; });
+  if(dPend&&phaseOf(g)==="act"){ const q=g.pend[dPend], lim=impLimit(levelOf(s,"i"));
+    detail+=`<div class="adet ki"><div class="adh">${icoHTML("crown","sico")}<b>Ponad limit kart (${lim}) – kliknij kartę do odrzucenia</b></div><div class="kiop">${handKI.map(cid=>{ const i=AH.length;
+      AH.push(()=>{ const ps=Act.deckCards("imp").map(x=>S.g.cards[x].p), low=ps.length?Math.min(...ps):0, t=tx(s); t.card(cid,{z:"deck",o:null,f:false,p:low-1}); t.patch.pend={[dPend]:null}; t.before.pend={[dPend]:q}; t.go("odrzuca kartę imperialną ponad limit (na spód talii)"); });
+      return `<button class="kic" data-h="${i}" data-help="Odrzuć tę kartę – trafi na spód talii."><img src="${faceSrc("imp",g.cards[cid].n)}" alt="" data-pv="imp|${g.cards[cid].n}"></button>`; }).join("")}</div></div>`; }
   const [gT,gV]=String(AD.grp||"").split("#"), Gs=shown.find(G=>G.title===gT);
   if(Gs){ const ents=gV?Gs.ents.filter(e=>!e.vm||e.vm===+gV):Gs.ents;
     detail+=`<div class="adet"><div class="adh">${icoHTML(Gs.ico,"sico")}${gV?VCH[gV]:""}<b>${esc(plain(Gs.title).replace(/\s*\(−[^)]*\)/,""))}</b></div>`;
@@ -1591,24 +1642,32 @@ function renderAD(){
     detail+=`</div>`; }
   if(kiAllowed&&(AD.crown||AD.ki)&&(AD.ki||!kiUsedThisTurn(s))){ detail+=`<div class="adet ki"><div class="adh">${icoHTML("crown","sico")}<b>Karta imperialna</b></div>`;
     if(!AD.ki) detail+=`<p class="ohint">Kliknij kartę imperialną w ręce na dole (podświetlone).</p>`;
-    else { const c=g.cards[AD.ki]; detail+=`<div class="kisel"><img class="kimg" src="${faceSrc("imp",c.n)}" alt="" data-pv="imp|${c.n}"><div class="kiop">${kiOpts.map(O=>{ const i=AH.length;
-        AH.push(()=>{ if(O.direct){ kiPlayOpt(O.j); AD.crown=false; return; } AD.kij=AD.kij===O.j?undefined:O.j; });
-        const ic=secIco(O.txt), m=/taniej o (\d+) (zł|kam|ener|wpł)/.exec(O.txt), ch=m?RK({zł:"g",kam:"s",ener:"e",wpł:"i"}[m[2]],m[1]):""; return `<button class="atile ${AD.kij===O.j?"sel":""}" data-h="${i}" data-help="${esc(O.txt)}" ${O.ok?"":"disabled"}>${ch}${icoHTML(ic)||`<span class="tlab">${esc(O.txt)}</span>`}</button>`; }).join("")}
-        ${(()=>{ const i=AH.length; AH.push(()=>{ AD.ki=null; AD.kij=undefined; AD.crown=false; }); return `<button class="btn" data-h="${i}">Nie zagrywam</button>`; })()}</div></div>`;
-      const O=kiOpts.find(O=>O.j===AD.kij); if(O){ if(O.ents.some(e=>e.wk&&!/^m:/.test(e._k))) detail+=wkSel(); detail+=optRows(O.ents); } }
+    else { const c=g.cards[AD.ki]; const opts=kiOpts.filter(O=>O.show);
+      detail+=`<div class="kisel"><img class="kimg" src="${faceSrc("imp",c.n)}" alt="" data-pv="imp|${c.n}"><div class="kiop">${opts.map(O=>{ const i=AH.length;
+        AH.push(()=>{ if(O.direct){ kiPlayOpt(O.j); AD.crown=false; return; } AD.kij=AD.kij===O.j?undefined:O.j; AD.kim=O.fld.length&&!O.sep.length?"field":!O.fld.length&&O.sep.length?"sep":undefined; });
+        const KICO={w:"won",t:"tech",d:"disc",c:"civ",tr:"axe",m:"mil",ws:"won",p:"pop"}; const ic=O.o.t==="disc"?KICO[O.o.a]:secIco(O.txt), m=/taniej o (\d+) (zł|kam|ener|wpł)/.exec(O.txt), ch=m?RK({zł:"g",kam:"s",ener:"e",wpł:"i"}[m[2]],"-"+m[1]):"", q=O.o.t==="disc"&&["ag","as"].includes(O.o.a)?`<span class="tq">?</span>`:""; return `<button class="atile ${AD.kij===O.j?"sel":""}" data-h="${i}" data-help="${esc(O.txt)}">${ch}${q||icoHTML(ic)||`<span class="tlab">${esc(O.txt)}</span>`}</button>`; }).join("")}
+        ${(()=>{ const i=AH.length; AH.push(()=>{ AD.ki=null; AD.kij=undefined; AD.kim=undefined; AD.crown=false; }); return `<button class="btn" data-h="${i}" data-help="Karta wraca na rękę – nic nie zostało zagrane.">Anuluj kartę</button>`; })()}</div></div>`;
+      if(!opts.length) detail+=`<p class="ohint">Tej karty nie możesz teraz użyć (brak zasobów albo celu).</p>`;
+      const O=opts.find(O=>O.j===AD.kij);
+      if(O&&!O.direct){
+        /* tryb: wzmocnienie akcji pola albo osobna akcja – wybór gracza (żelazna zasada) */
+        const mt=(mode,lab,help)=>{ const i=AH.length; AH.push(()=>{ AD.kim=AD.kim===mode?undefined:mode; }); return `<button class="vbtn" aria-pressed="${AD.kim===mode}" data-h="${i}" data-help="${esc(help)}">${lab}</button>`; };
+        detail+=`<div class="kimode">${O.fld.length?mt("field",`${icoHTML(FIELD_ICO[k]||"crown","tico sm")} Wzmocnij akcję pola`,`Zniżka z karty dolicza się do akcji pola ${F.n} (sumuje się ze zniżką pola).`):""}${O.sep.length?mt("sep",`${icoHTML("crown","tico sm")} Osobna akcja`,"Karta daje dodatkową, osobną akcję z tą zniżką – akcje pola zostają do wykonania."):""}</div>`;
+        if(AD.kim){ const ents=AD.kim==="field"?O.fld:O.sep; if(ents.some(e=>e.wk&&!/^m:/.test(e._k))) detail+=wkSel(); detail+=optRows(ents,false,true); } } }
     detail+=`</div>`; }
   MKON=new Set(MK.filter(e=>!e.lack.length).map(e=>e._k)); MKSEL=MK;
-  const info=groups.filter(G=>!avail(G)).map(G=>(G.body.match(/<p class="okmsg">[\s\S]*?<\/p>/g)||[]).join("")).join("");
+  const info=groups.filter(G=>!avail(G)&&!(G.ico&&/<p class="okmsg">/.test(G.body))).map(G=>(G.body.match(/<p class="okmsg">[\s\S]*?<\/p>/g)||[]).join("")).join("");
   const myTurn=(phaseOf(g)==="act"||(phaseOf(g)==="dip"&&AD.dipEnd))&&g.turn===s;
   const iEnd=AH.length; AH.push(()=>{ closeAD(); if(myTurn) endTurn(); Cam.preset("main"); });
-  const iX=AH.length; AH.push(()=>closeAD());
+  const iX=AH.length; AH.push(()=>{ if(myTurn) AD.mini=!AD.mini; else closeAD(); });
+  const iU=AH.length; AH.push(()=>{ undoAny(); });
   const iP=AH.length; AH.push(()=>{ closeAD(); passTurn(); Cam.preset("main"); });
-  const defHelp=shown.length||(kiAllowed&&handKI.length&&!kiUsedThisTurn(s))?"Najedź na ikonę, żeby zobaczyć opis. Kliknij, żeby wybrać.":"Brak dostępnych akcji – zakończ ruch.";
+  const defHelp=(AD.msg?AD.msg+" ":"")+(shown.length||(kiAllowed&&handKI.length&&!kiUsedThisTurn(s))?"Najedź na ikonę, żeby zobaczyć opis. Kliknij, żeby wybrać.":"Brak dostępnych akcji – zakończ ruch.");
   el.innerHTML=`<div class="ahd" title="Przeciągnij, żeby przesunąć okno">${FIELD_ICO[k]?`<img class="fico" src="${asset("ico/"+FIELD_ICO[k]+".png")}" alt="">`:""}<span class="fhead"><span class="fname">${F.n}</span><span class="who">${swatch(s)} ${esc(seatName(s))}${pawn?" · "+PIECE_PL[pawn.k]:""}</span></span><span class="sp"></span>
-    <button class="btn primary" data-h="${iEnd}" title="${myTurn?"Kończy ruch; kolejka przechodzi na następnego gracza":"Zamyka okno"}">${myTurn?"Koniec ruchu ▸":"Gotowe"}</button>${myTurn?`<button class="btn" data-h="${iP}" title="Kończy akcje w tej rundzie – kolejka Cię pomija">Pas</button>`:""}<button class="btn" data-h="${iX}" title="Zamknij okno bez kończenia ruchu" aria-label="Zamknij okno">✕</button></div>
-    <div class="bsecs">${warn.map(w=>`<p class="awarn">${w}</p>`).join("")}${AD.sub>0?`<div class="subhead">Dowolna akcja główna · pozostało: <b>${AD.sub}</b></div>`:""}
+    <button class="btn primary" data-h="${iEnd}" title="${myTurn?"Kończy ruch; kolejka przechodzi na następnego gracza":"Zamyka okno"}">${myTurn?"Koniec ruchu ▸":"Gotowe"}</button>${myTurn?`<button class="btn" data-h="${iP}" title="Kończy akcje w tej rundzie – kolejka Cię pomija">Pas</button>`:""}${myTurn?`<button class="btn" data-h="${iU}" data-help="Cofa cały ruch: przywraca stan gry sprzed postawienia pionka.">Cofnij ruch</button>`:""}<button class="btn" data-h="${iX}" title="${AD.mini?"Rozwiń okno":"Zwiń okno (ruch trwa dalej)"}" aria-label="${AD.mini?"Rozwiń":"Zwiń"}">${AD.mini?"▴":"▾"}</button></div>
+    <div class="bsecs" ${AD.mini?"hidden":""}>${warn.map(w=>`<p class="awarn">${w}</p>`).join("")}${AD.sub>0?`<div class="subhead">Dowolna akcja główna · pozostało: <b>${AD.sub}</b></div>`:""}
     <div class="atiles">${tiles||""}</div>${info?`<div class="ainfo">${info}</div>`:""}${detail}</div>
-    <div class="ahelp" id="ahelp" data-def="${esc(defHelp)}">${esc(defHelp)}</div>`;
+    <div class="ahelp" id="ahelp" data-def="${esc(defHelp)}" ${AD.mini?"hidden":""}>${esc(defHelp)}</div>`;
   el.querySelectorAll(".wsrc").forEach(sl=>sl.onchange=()=>{ AD.src=sl.value||null; renderAD(); });
   el.hidden=false;
   renderTargets(); Table.renderHand();
@@ -1634,7 +1693,7 @@ function kiPlayOpt(j){ const id=AD.ki; if(!id) return; AD.ki=null; Object.assign
 function kiHandClick(id){ const c=S.g.cards[id], ph=phaseOf(S.g); if(!c) return; UI.preview(null);
   if(TURN_PHASES.includes(ph)&&c.o!==S.g.turn){ UI.toast(`Tę kartę może zagrać tylko ${seatName(c.o)} – teraz jest tura: ${seatName(S.g.turn)}.`); return; }
   if(ph==="act"&&kiUsedThisTurn(c.o)){ UI.toast("W tej turze już zagrałeś kartę imperialną – tylko 1 na turę."); return; }
-  if(ph==="act"&&AD.open&&AD.seat===c.o&&((S.g.pieces[AD.pawn]&&S.g.pieces[AD.pawn].k==="amb")||AD.k==="gld")){ AD.ki=AD.ki===id?null:id; AD.kij=undefined; AD.crown=true; AD.grp=null; renderAD(); return; }
+  if(ph==="act"&&AD.open&&AD.seat===c.o&&((S.g.pieces[AD.pawn]&&S.g.pieces[AD.pawn].k==="amb")||AD.k==="gld")){ AD.ki=AD.ki===id?null:id; AD.kij=undefined; AD.kim=undefined; AD.crown=true; AD.grp=null; renderAD(); return; }
   if(ph==="dip"){ openPlayImp(id,"dip"); return; }
   if(ph==="act"){ UI.toast("Kartę imperialną zagrywasz razem z ambasadorem: postaw ambasadora na polu akcji, a potem kliknij kartę."); return; }
   UI.toast("Karty imperialne zagrywa się w fazie dyplomacji albo akcji."); }
@@ -1692,7 +1751,7 @@ function renderCF(){ const el=dlg("cfmdlg","Potwierdzenie akcji"), T=CF.T; if(!T
   el.querySelector("#cfX").onclick=closeCF; el.querySelector("#cfX2").onclick=closeCF;
   el.querySelectorAll("[data-wk]").forEach(b=>b.onclick=()=>{ CF.wk=b.dataset.wk; renderCF(); });
   el.querySelectorAll("[data-ce]").forEach(b=>b.onclick=()=>{ const e=E[+b.dataset.ce]; if(cantPay(s,e.delta)) return; const w=CF.wk; closeCF(); UI.preview(null);
-    AD.wk=w; if(e.pre!==undefined&&AD.ki){ const id=AD.ki; AD.ki=null; Object.assign(KP,{open:false,id,ph:"act",seat:s,sel:{act:e.pre}}); playKI(); }
+    AD.wk=w; if(e.pre!==undefined&&(e.kid||AD.ki)){ const id=e.kid||AD.ki; AD.ki=null; Object.assign(KP,{open:false,id,ph:"act",seat:s,sel:{act:e.pre}}); playKI(); }
     e.run(); AD.wk=null; });
   el.hidden=false; el.querySelector("[data-ce]:enabled")?.focus(); }
 
@@ -1861,7 +1920,7 @@ function applyReward(t,seat,R){ if(!R) return t;
   if(R.vp) txVP(t,seat,R.vp); for(let i=0;i<(R.h||0);i++) takeGlory(t,seat); for(let i=0;i<(R.imp||0);i++) t.imp();
   if(R.car) txLevel(t,seat,"car",R.car); if(R.impP) txLevel(t,seat,"imp",R.impP);
   if(R.str) txStr(t,seat,R.str); if(R.dip) txDip(t,seat,R.dip); if(R.carM) txCaravan(t,seat,R.carM); if(R.war) txWar(t,R.war);
-  if(R.pick) txPick(t,seat,R.pick,"bonus z kolonii"); if(R.upg) t.upg=(t.upg||0)+R.upg; return t; }
+  if(R.pick) txPick(t,seat,R.pick,"bonus z kolonii"); if(R.upg) t.upg=(t.upg||0)+R.upg; if(R.hint==="darmowe odkrycie terytorium"&&nextTerrs(seat).length) pendAdd(t,seat,"fdisc",1); return t; }
 
 /* chwała: 8 żetonów na torze; 1–4 darmowe, 5–6 +1 wpływ, 7–8 +1 energia; po wyczerpaniu tor się uzupełnia */
 const gloryCost=j=> j<4?{} : j<6?{i:-1}:{e:-1};
@@ -1940,13 +1999,16 @@ function cardFig(id,cap){ const c=S.g.cards[id]; if(!c) return ""; return `<figu
 function payInputs(prefix,total,seat){ const res=S.g.players[seat].res||{}, cm=Math.min(total,S.g.players[seat].colMod||0); const ii=Math.min(total-cm,Math.max(0,res.i||0)), gg=Math.min(Math.max(0,total-cm-ii),Math.max(0,res.g||0)), hh=Math.max(0,total-cm-ii-gg);
   return `<div class="payrow"><label>Wpływy <input type="number" min="0" id="${prefix}i" value="${ii}"></label><label>Złoto <input type="number" min="0" id="${prefix}g" value="${gg}"></label><label>Chwała (joker) <input type="number" min="0" id="${prefix}h" value="${hh}"></label><label>Modyfikatory kolonizacji <input type="number" min="0" id="${prefix}m" value="${cm}"></label></div>${cm?`<p class="evn">Bonus z kart zagranych w dyplomacji: +${S.g.players[seat].colMod} do kolonizacji (wpisany w modyfikatory).</p>`:""}
     ${specAvail(seat,"col").map(sp=>`<label class="spc"><input type="checkbox" data-spc="${prefix}|${sp.id}|${sp.n}"> Użyj właściwości karty ${esc(sp.nm)}: +${sp.n} do kolonizacji (jednorazowo)</label>`).join("")}
+    ${protCards(seat).map(id=>`<label class="spc prot"><input type="checkbox" data-spc="${prefix}|${id}|3"> Zagraj kartę ochrony: +3 do kolonizacji (karta odchodzi z ręki)</label>`).join("")}
     <p class="an">Suma musi wynosić ${total}. Modyfikatory to kotwice z kart imperialnych zagranych w dyplomacji, z paktów oraz zaznaczone właściwości kart.</p>`; }
-function spcUsed(prefix,seat){ const el=document.getElementById("coldlg"); if(!el) return; const L=[...el.querySelectorAll(`[data-spc^="${prefix}|"]:checked`)].map(b=>b.dataset.spc.split("|")[1]);
-  if(L.length) Act.commit({spUsed:Object.fromEntries(L.map(id=>[id,seat]))},{spUsed:Object.fromEntries(L.map(id=>[id,null]))},`używa właściwości kart do kolonizacji: ${L.map(id=>TECH[S.g.cards[id].n].nm).join(", ")}`,seat); }
+function spcUsed(prefix,seat){ const el=document.getElementById("coldlg"); if(!el) return; const A=[...el.querySelectorAll(`[data-spc^="${prefix}|"]:checked`)].map(b=>b.dataset.spc.split("|")[1]);
+  const L=A.filter(id=>S.g.cards[id]&&S.g.cards[id].k!=="imp"), P=A.filter(id=>S.g.cards[id]&&S.g.cards[id].k==="imp");
+  if(L.length) Act.commit({spUsed:Object.fromEntries(L.map(id=>[id,seat]))},{spUsed:Object.fromEntries(L.map(id=>[id,null]))},`używa właściwości kart do kolonizacji: ${L.map(id=>TECH[S.g.cards[id].n].nm).join(", ")}`,seat);
+  if(P.length){ const t=tx(seat), [x,y]=playSpot(seat); P.forEach(id=>t.card(id,{z:"table",o:null,f:true,x:Math.round(x),y:Math.round(y),pl:seat,ph:"col",r:Act.maxZ()+1})); t.go(`zagrywa kartę ochrony w kolonizacji: +${3*P.length} do kolonizacji`); } }
 /* płatność w kolonizacji nie może przekroczyć zasobów gracza (wpływy, złoto, chwała) ani jego modyfikatorów */
-function payOK(seat,p){ const r=S.g.players[seat].res||{}, cm=S.g.players[seat].colMod||0; const bad=[]; if(p.i>(r.i||0)) bad.push("wpływów"); if(p.g>(r.g||0)) bad.push("złota"); if(p.h>(r.h||0)) bad.push("chwały"); if(p.m>cm) bad.push("modyfikatorów kolonizacji");
+function payOK(seat,p){ const r=S.g.players[seat].res||{}, cm=S.g.players[seat].colMod||0; const bad=[]; if(p.i>(r.i||0)) bad.push("wpływów"); if(p.g>(r.g||0)) bad.push("złota"); if(p.h>(r.h||0)) bad.push("chwały"); if(p.m>cm+(p.x||0)) bad.push("modyfikatorów kolonizacji");
   if(bad.length){ UI.toast(`Nie masz tyle ${bad.join(", ")}. Zmień płatność albo zrezygnuj.`); return false; } return true; }
-function readPay(prefix){ const v=k=>Math.max(0,parseInt((document.getElementById(prefix+k)||{}).value,10)||0); return {i:v("i"),g:v("g"),h:v("h"),m:v("m")}; }
+function readPay(prefix){ const v=k=>Math.max(0,parseInt((document.getElementById(prefix+k)||{}).value,10)||0); const el=document.getElementById("coldlg"), x=el?[...el.querySelectorAll(`[data-spc^="${prefix}|"]:checked`)].reduce((a,b)=>a+(+b.dataset.spc.split("|")[2]||0),0):0; return {i:v("i"),g:v("g"),h:v("h"),m:v("m"),x}; }
 
 const CD={open:false};
 function openCol(){ closeAD(); closePR(); closeDlgs(); CD.open=true; renderCD(); }
@@ -1961,7 +2023,7 @@ function finishBid(st,ch,actor){ const m={...st,...ch,passed:{...st.passed,...(c
   else if(!active.length){ ch.phase="done"; ch.turn=null; }
   else ch.turn=nextActive(m,actor);
   return ch; }
-function colMax(s){ const pl=S.g.players[s]||{}, r=pl.res||{}; return (r.i||0)+(r.g||0)+(r.h||0)+(pl.colMod||0)+specAvail(s,"col").reduce((a,x)=>a+x.n,0); }
+function colMax(s){ const pl=S.g.players[s]||{}, r=pl.res||{}; return (r.i||0)+(r.g||0)+(r.h||0)+(pl.colMod||0)+specAvail(s,"col").reduce((a,x)=>a+x.n,0)+3*protCards(s).length; }
 function colBid(amount){ const st=S.g.col, me=S.me; if(amount<=st.high){ UI.toast(`Oferta musi być wyższa niż ${st.high}.`); return; }
   if(amount>colMax(me)){ UI.toast(`Nie możesz licytować powyżej swoich zasobów: maksymalnie ${colMax(me)} (wpływy + złoto + chwała jako joker + modyfikatory kolonizacji).`); return; }
   colCommit(finishBid(st,{high:amount,hs:me,last:{[me]:amount}},me),`licytuje kolonię: ${amount}`); }
@@ -1973,7 +2035,7 @@ function colTake(which,amount,pay){ const st=S.g.col, seat=S.me, id=which===1?st
   const isWin=st.phase==="pay"; const ch={}; ch[which===1?"t1":"t2"]=seat;
   if(isWin){ const other=which===1?st.c2:st.c1; ch.phase= (st.second&&other)?"second":"done"; ch.pick=which; }
   else ch.phase="done";
-  colCommit(ch,`${isWin?"wygrywa licytację":"bierze"} ${cardName(c)}${amount?` i płaci ${amount} (${pay.i} wpływów, ${pay.g} złota${pay.h?`, ${pay.h} chwały`:""}${pay.m?`, ${pay.m} z modyfikatorów`:""})`:""}${R&&R.hint?` · do zrobienia ręcznie: ${R.hint}`:""} · bonus: ${rewardText(R)}${t.notes?" · "+t.notes.join(", "):""}`,{patch:t.patch,before:t.before,who:seat}); if(t.pick) openPick(seat,t.pick.n,t.pick.why); if(t.upg) openUpgrade(seat,t.upg,"bonus z kolonii"); }
+  colCommit(ch,`${isWin?"wygrywa licytację":"bierze"} ${cardName(c)}${amount?` i płaci ${amount} (${pay.i} wpływów, ${pay.g} złota${pay.h?`, ${pay.h} chwały`:""}${pay.m?`, ${pay.m} z modyfikatorów`:""})`:""}${R&&R.hint&&R.hint!=="darmowe odkrycie terytorium"?` · do zrobienia ręcznie: ${R.hint}`:""} · bonus: ${rewardText(R)}${t.notes?" · "+t.notes.join(", "):""}`,{patch:t.patch,before:t.before,who:seat}); if(t.pick) openPick(seat,t.pick.n,t.pick.why); if(t.upg) openUpgrade(seat,t.upg,"bonus z kolonii"); }
 function colFav(){ const st=S.g.col, seat=S.me, id=st.c2, c=S.g.cards[id]; const t=tx(seat); const [x,y]=cardAreaSpot(seatIdx(seat)); t.card(id,{x,y,r:Act.maxZ()+1});
   applyReward(t,seat,FAV[c.n]); colCommit({phase:"done",t2:seat},`bierze kartę łaski cesarskiej (${rewardText(FAV[c.n])})${t.notes?" · "+t.notes.join(", "):""}`,{patch:t.patch,before:t.before,who:seat}); if(t.pick) openPick(seat,t.pick.n,t.pick.why); if(t.upg) openUpgrade(seat,t.upg,"bonus z łaski cesarskiej"); }
 function colDecline(){ colCommit({phase:"done"},"rezygnuje z drugiej karty w kolonizacji"); }
@@ -1992,8 +2054,8 @@ function renderCD(){
       body+=`<p><b>Najwyższa oferta: ${st.high||"brak"}</b>${st.hs?` (${esc(seatName(st.hs))})`:""}. Teraz: ${st.turn?`${swatch(st.turn)} <b>${esc(seatName(st.turn))}</b>`:"—"}</p>`;
       if(st.turn===S.me){ const res=g.players[S.me].res||{};
         const cmH=(g.players[S.me].colMod||0);
-        body+=(cmH?`<p class="an" style="border:2px solid var(--brass);background:rgba(201,162,39,.12);border-radius:8px;padding:8px 10px;margin:0 0 8px"><b>Modyfikator kolonizacji +${cmH}</b> – użyj go w pierwszej kolejności. Jeśli go nie wykorzystasz w tej licytacji, przepada.</p>`:"")+`<div class="row"><label>Twoja oferta <input type="number" id="cBid" min="${st.high+1}" max="${colMax(S.me)}" value="${Math.min(st.high+1,colMax(S.me))}"${cmH?` style="outline:3px solid var(--brass)"`:""}></label><button class="btn primary" id="cBidB">Licytuj</button><button class="btn" id="cPass">Pas</button></div>
-        <p class="an">Masz ${res.i||0} wpływów, ${res.g||0} złota${res.h?` i ${res.h} chwały (joker)`:""}${(g.players[S.me].colMod||0)||specAvail(S.me,"col").length?` oraz modyfikatory kolonizacji`:""} – możesz zaoferować najwyżej <b>${colMax(S.me)}</b>.${colMax(S.me)<=st.high?" Nie stać Cię na przebicie – spasuj.":""}</p>`; }
+        body+=(cmH?`<p class="an" style="border:2px solid var(--brass);background:rgba(201,162,39,.12);border-radius:8px;padding:8px 10px;margin:0 0 8px"><b>Modyfikator kolonizacji +${cmH}</b> – użyj go w pierwszej kolejności. Jeśli go nie wykorzystasz w tej licytacji, przepada.</p>`:"")+`<div class="row"><label>Twoja oferta <input type="number" id="cBid" min="${st.high+1}" max="${colMax(S.me)}" value="${Math.min(st.high+1,colMax(S.me))}"${cmH?` style="outline:3px solid var(--brass)"`:""}></label>${[1,2,3].filter(d=>st.high+d<=colMax(S.me)).map(d=>`<button class="btn" data-cup="${st.high+d}" title="Oferta ${st.high+d}">+${d}</button>`).join("")}<button class="btn primary" id="cBidB">Licytuj</button><button class="btn" id="cPass">Pas</button></div>
+        <p class="an">Masz ${res.i||0} wpływów, ${res.g||0} złota${res.h?` i ${res.h} chwały (joker)`:""}${(g.players[S.me].colMod||0)||specAvail(S.me,"col").length||protCards(S.me).length?` oraz modyfikatory kolonizacji`:""} – możesz zaoferować najwyżej <b>${colMax(S.me)}</b>.${colMax(S.me)<=st.high?" Nie stać Cię na przebicie – spasuj.":""}</p>`; }
       else body+=`<p class="an">Licytuje teraz inny gracz. Żeby zagrać za niego na tym komputerze, wybierz w „Grasz jako” opcję „Jeden komputer”.</p>`;
     } else if(st.phase==="pay"){
       body+=`<p><b>${esc(seatName(st.win))}</b> wygrywa licytację za ${st.high}.</p>`;
@@ -2013,6 +2075,7 @@ function renderCD(){
   const q=s=>el.querySelector(s);
   q("#cClose").onclick=()=>{ CD.open=false; CD.shut=roundOf(S.g); el.hidden=true; };
   if(q("#cBidB")) q("#cBidB").onclick=()=>colBid(parseInt(q("#cBid").value,10)||0);
+  el.querySelectorAll("[data-cup]").forEach(b=>b.onclick=()=>colBid(+b.dataset.cup));
   if(q("#cPass")) q("#cPass").onclick=()=>colPass();
   if(q("#cFav")) q("#cFav").onclick=()=>colFav();
   if(q("#cDecl")) q("#cDecl").onclick=()=>colDecline();
@@ -2181,6 +2244,19 @@ function upgradesOf(s){ const out=[], lines=[...new Set(BOARD_TECH.map(B=>B.line
     for(let j=i+1;j<L.length;j++){ const hi=L[j], lo=L[i], dp={}; const keys=new Set(Object.keys(hi.p||{}).concat(Object.keys(lo.p||{}))); keys.forEach(k=>{ const dd=((hi.p||{})[k]||0)-((lo.p||{})[k]||0); if(dd) dp[k]=dd; });
       out.push({lo,hi,w:ws[ws.length-1],cost:Math.max(0,(hi.cost||0)-(lo.cost||0)),dp}); } } });
   return out; }
+/* karta ochrony (przekreślona postać, „COLONIZATION 3 / WAR 2”) na ręce gracza */
+const PROT_CARDS=[65,67];
+function protCards(s){ return Object.keys(S.g.cards).filter(id=>{ const c=S.g.cards[id]; return c&&c.k==="imp"&&c.z==="hand"&&c.o===s&&PROT_CARDS.includes(c.n); }); }
+function openWarKI(pid,p){ const el=dlg("warkidlg","Wojna – karta ochrony"), ids=protCards(p.s), st=strOf(p.s);
+  const others=seatsInPlay(S.g).filter(x=>x!==p.s).map(x=>`${swatch(x)} ${esc(seatName(x))}: ${strOf(x)+((S.g.warB||{})[x]||0)}`).join(" &nbsp; ");
+  el.innerHTML=`<header><div><h3>Konflikt – użyć karty ochrony?</h3><p class="an">${swatch(p.s)} ${esc(seatName(p.s))} · Twoja siła: <b>${st}</b>. Pozostali: ${others}. Karta daje +2 siły tylko w tym rozliczeniu wojny (tor siły się nie zmienia) i odchodzi z ręki.</p></div></header>
+    <div class="mk">${ids.map(id=>`<button class="mc" data-wk="${id}"><img src="${faceSrc("imp",S.g.cards[id].n)}" alt="" data-pv="imp|${S.g.cards[id].n}"><span>Zagraj: +2 siły</span></button>`).join("")}</div>
+    <div class="row"><button class="btn" id="wkNo">Nie zagrywam</button></div>`;
+  el.hidden=false;
+  const fin=(t,msg)=>{ t.patch.pend={...(t.patch.pend||{}),[pid]:null}; t.before.pend={...(t.before.pend||{}),[pid]:p}; el.hidden=true; t.go(msg); };
+  el.querySelector("#wkNo").onclick=()=>fin(tx(p.s),"nie używa karty ochrony w wojnie");
+  el.querySelectorAll("[data-wk]").forEach(b=>b.onclick=()=>{ const t=tx(p.s), [x,y]=playSpot(p.s); t.card(b.dataset.wk,{z:"table",o:null,f:true,x:Math.round(x),y:Math.round(y),pl:p.s,ph:"war",r:Act.maxZ()+1});
+    t.top("warB",{[p.s]:2},{[p.s]:(S.g.warB||{})[p.s]||null}); fin(t,"zagrywa kartę ochrony w wojnie: +2 siły w tym rozliczeniu"); }); }
 function openLose(seat,pid){ const el=dlg("losedlg","Oddaj kartę imperialną"); const ids=Object.keys(S.g.cards).filter(id=>{ const c=S.g.cards[id]; return c&&c.z==="hand"&&c.o===seat&&c.k==="imp"; });
   el.innerHTML=`<header><div><h3>Oddaj 1 kartę imperialną</h3><p class="an">Wydarzenie „${esc(curEventName())}” · ${esc(seatName(seat))}. Kliknij kartę, którą oddajesz.</p></div><button class="btn" id="lsX">Zamknij</button></header>
     <div class="mk">${ids.map(id=>`<button class="mc" data-lose="${id}"><img src="${faceSrc("imp",S.g.cards[id].n)}" alt="" data-pv="imp|${S.g.cards[id].n}"><span>Oddaj</span></button>`).join("")||"<p class='an'>Brak kart na ręce.</p>"}</div>`;
@@ -2437,7 +2513,12 @@ function autoFlow(){ const g=S.g; if(!g||g.status!=="play"||!S.built) return; if
   if(ph==="prod"){ if(afOnce("p"+r)) doProduction(); return; }
   if(ph==="ev"){ if(afOnce("e"+r)) doCompare(); return; }
   if(ph==="col"){ const st=g.col; if((!st||st.phase==="done"||(!st.c1&&!st.c2))&&afOnce("c"+r)) goPhase("war"); return; }
-  if(ph==="war"){ if(g.warR!==r){ if(afOnce("w"+r)) doWar(); return; }
+  if(ph==="war"){ if(g.warR!==r){
+      /* karta ochrony (+2 siły w wojnie): przed rozliczeniem konfliktu posiadacze decydują po kolei, jawnie */
+      if((g.warPend||warOf()===4)&&g.warKIr!==r){ if(!afOnce("wk"+r)) return; const holders=turnOrder(g).filter(x=>seatsInPlay(g).includes(x)&&protCards(x).length);
+        if(holders.length){ const t=tx(holders[0]); t.patch.warKIr=r; t.before.warKIr=g.warKIr===undefined?null:g.warKIr; holders.forEach((h,i)=>{ const id=pendAdd(t,h,"warKI",1); t.patch.pend[id].o=i; }); t.go("Wojna: posiadacze karty ochrony decydują, czy jej użyć (+2 siły)",); return; } }
+      if(Object.values(g.pend||{}).some(p=>p&&p.k==="warKI")) return;
+      if(afOnce("w"+r)) doWar(); return; }
     if(Object.values(g.pend||{}).some(p=>p&&p.k==="war1")) return;
     if(r>=7||!afOnce("n"+r)) return; if(r===4||r===6) startManu(); else startRound(); return; }
   if(ph==="manu"){ const M=g.manu; if(!M||M.r!==r) return;
@@ -2514,6 +2595,7 @@ function goalsSync(){ const g=S.g; if(!g||g.status!=="play") return false; const
       annAdd(t,"Cel publiczny",lines);
       t.go(`osiąga cel publiczny: ${Q.nm} (${ord+1}. gracz)${pts?` · +${pts} kultury`:""} · produkcja ${PROD_NAME[Q.r]} +1`); return true; } }
   return false; }
+document.addEventListener("click",e=>{ const d=e.target.closest&&e.target.closest("[data-acad]"); if(d){ e.stopPropagation(); openAcad(null,{s:d.dataset.acad}); } },true);
 function openAcad(pid,p){ const el=dlg("acaddlg","Imperialna Akademia Wojskowa"), s=p.s, g=S.g, res=g.players[s].res||{}, opts=genOptions(s), c=milWorkers(s), act=genActive(s).act;
   const cell=k=>{ const G=GENS[k], o=(g.gens||{})[k], can=opts.includes(k); const full=Object.keys(G.req).every(r=>c[r]>=G.req[r]);
     return `<div class="gen ${o?"taken":""} ${can?"can":""}" ${o?`style="--c:${SEAT_COL[o]}"`:""}><b>+${G.b} siły</b><span>${genReqTxt(G)}</span>
@@ -2526,12 +2608,12 @@ function openAcad(pid,p){ const el=dlg("acaddlg","Imperialna Akademia Wojskowa")
   el.hidden=false;
   el.querySelector("#acX").onclick=()=>{ el.hidden=true; pendDone(pid); };
   { const cb=el.querySelector("#acC"); if(cb) cb.onclick=()=>{ const t=tx(s); t.res("h",-1); txLevel(t,s,"c",2); t.pl("genCR",roundOf(S.g)); t.go("Akademia: za 1 chwałę produkcja kultury +2");
-    setTimeout(()=>{ const P=(S.g.pend||{})[pid]; if(P&&genOptions(s).length) openAcad(pid,P); else { el.hidden=true; pendDone(pid); } },80); }; }
+    setTimeout(()=>{ const P=pid?(S.g.pend||{})[pid]:p; if(P&&genOptions(s).length) openAcad(pid,P); else { el.hidden=true; pendDone(pid); } },80); }; }
   el.querySelectorAll("[data-gen]").forEach(b=>b.onclick=()=>{ const k=b.dataset.gen, G=GENS[k], t=tx(s), C=genCost(G);
     t.res("h",-C.h); if(C.g) t.res("g",-C.g); t.top("gens",{[k]:s},{[k]:null});
     if(G.lv===2){ txDip(t,s,1); } if(G.lv===3){ t.res("s",2); t.note("+2 kamienie"); }
     t.go(`zatrudnia generała ${G.lv}. poziomu (${genReqTxt(G)} → +${G.b} siły) za ${C.h} chwały${C.g?` i ${C.g} złota`:""}`);
-    setTimeout(()=>{ genSync(); const P=(S.g.pend||{})[pid]; if(P&&genOptions(s).length) openAcad(pid,P); else { el.hidden=true; pendDone(pid); } },80); }); }
+    setTimeout(()=>{ genSync(); const P=pid?(S.g.pend||{})[pid]:p; if(P&&genOptions(s).length) openAcad(pid,P); else { el.hidden=true; pendDone(pid); } },80); }); }
 /* wymiana w produkcji z cudu (raz na produkcję za każdy taki cud) */
 function openPex(pid,p){ const el=dlg("pexdlg","Wymiana w produkcji"), s=p.s, done=p.done||{}, res=S.g.players[s].res||{};
   el.innerHTML=`<header><div><h3>Wymiana w produkcji</h3><p class="an">${swatch(s)} ${esc(seatName(s))}: każdy taki cud pozwala raz w fazie produkcji wymienić 1 zasób na 1 zasób.</p></div><button class="btn" id="pxX">Nie wymieniam</button></header>
@@ -2546,6 +2628,9 @@ function openPex(pid,p){ const el=dlg("pexdlg","Wymiana w produkcji"), s=p.s, do
 function renderGens(){ const W=document.getElementById("world"); if(!W) return; let c=document.getElementById("gens"); if(!c){ c=document.createElement("div"); c.id="gens"; W.appendChild(c); }
   const G=S.g.gens||{}; let h=""; for(const k in G){ const s=G[k]; if(!s) continue; const x=GEN_X["abcd".indexOf(k[1])], y=GEN_Y[k[0]];
     h+=`<div class="genm" style="left:${x-20}px;top:${y-20}px;background:${SEAT_COL[s]}" title="${esc(seatName(s))}"></div>`; }
+  /* Akademia: podświetlona, gdy oglądany gracz może zatrudnić generała – klik otwiera okno ponownie */
+  { const who=S.auto?(S.g.turn||S.me):S.me; if(who&&seatsInPlay(S.g).includes(who)&&genOptions(who).length&&!Object.values(S.g.pend||{}).some(q=>q&&q.k==="acad"))
+      h+=`<div class="acadhit" data-acad="${who}" style="left:${GEN_X[0]-70}px;top:${GEN_Y[3]-90}px;width:${GEN_X[3]-GEN_X[0]+140}px;height:${GEN_Y[1]-GEN_Y[3]+180}px" title="Imperialna Akademia Wojskowa – kliknij, żeby zatrudnić generała"></div>`; }
   for(const id in S.g.cards){ const c=S.g.cards[id]; if(!c||c.z!=="table"||!GUILD[c.n]||!/^era/.test(c.k)||inMarket(c)) continue; const R=cardRect(c);
     if(c.gu) h+=`<div class="gused" style="left:${R[0]}px;top:${R[1]}px;width:${R[2]-R[0]}px;height:${R[3]-R[1]}px"><span>zużyta</span></div>`;
     else { const s=seatsInPlay(S.g).find(x=>ownedCards(x).includes(id)); if(s&&phaseOf(S.g)==="act"&&S.g.turn===s&&c.gb!==S.g.turnT&&(S.g.guildT||{})[s]!==S.g.turnT) h+=`<div class="gready" style="left:${R[0]-6}px;top:${R[1]-6}px;width:${R[2]-R[0]+12}px;height:${R[3]-R[1]+12}px"></div>`; } }
@@ -2718,7 +2803,7 @@ function doCompare(){ const g=S.g, C=EVCMP[curEventN()]||[], lines=[];
 /* status wojny: konflikt, gdy znacznik doszedł do pola 4 (także gdy przeszedł dalej na pole 1) */
 function doWar(){ const g=S.g, r=roundOf(g), seats=seatsInPlay(g), lines=[];
   const t={patch:{players:{},pieces:{},cards:{},warR:r},before:{players:{},pieces:{},cards:{},warR:g.warR===undefined?null:g.warR}};
-  if(g.warPend||warOf()===4){ const st={}; seats.forEach(s=>st[s]=strOf(s));
+  if(g.warPend||warOf()===4){ const st={}, wb=g.warB||{}; seats.forEach(s=>st[s]=strOf(s)+(wb[s]||0)); if(Object.keys(wb).length){ t.patch.warB=null; t.before.warB=wb; }
     lines.push("Konflikt! Siła: "+seats.map(s=>`${seatName(s)} ${st[s]}`).join(", ")+".");
     seats.forEach(s=>{ const pts=seats.reduce((a,o)=>a+Math.max(0,st[s]-st[o]),0); if(pts) txVP(tx(s,t),s,pts); lines.push(`${seatName(s)}: +${pts} kultury (różnice siły wobec słabszych)`); });
     const ord=seats.slice().sort((a,b)=>{ const A=[st[a],...tieVec(a)],B=[st[b],...tieVec(b)]; for(let i=0;i<A.length;i++) if(A[i]!==B[i]) return B[i]-A[i]; return 0; });
@@ -2732,8 +2817,8 @@ function doWar(){ const g=S.g, r=roundOf(g), seats=seatsInPlay(g), lines=[];
   Act.commit(t.patch,t.before,"Status wojny: "+lines.join(" "),"-"); }
 /* decyzje gracza z faz automatycznych: upgrade, nagroda za 1. miejsce w wojnie */
 const PD={shown:{}};
-function pendDone(id){ const p=(S.g.pend||{})[id]; if(p) Act.commit({pend:{[id]:null}},{pend:{[id]:p}},null); }
-const PEND_DLG={loseI:"losedlg",discI:"discdlg",acad:"acaddlg",pick:"pickdlg",lay:"laydlg",war1:"war1dlg",rez:"rezdlg",pex:"pexdlg",upg:"upgdlg"};
+function pendDone(id){ if(!id) return; const p=(S.g.pend||{})[id]; if(p) Act.commit({pend:{[id]:null}},{pend:{[id]:p}},null); }
+const PEND_DLG={fdisc:"fdiscdlg",warKI:"warkidlg",loseI:"losedlg",discI:"discdlg",acad:"acaddlg",pick:"pickdlg",lay:"laydlg",war1:"war1dlg",rez:"rezdlg",pex:"pexdlg",upg:"upgdlg"};
 function pendCheck(){ const g=S.g; if(!g||annBusy()) return; const P=g.pend||{};
   /* okno decyzji zniknęło (np. po przerysowaniu ekranu), a decyzja wciąż czeka – pokaż je ponownie */
   for(const id in PD.shown){ const p=P[id]; if(!p){ delete PD.shown[id]; continue; } const el=document.getElementById(PEND_DLG[p.k]||""); if(PEND_DLG[p.k]&&PD.later!==id&&(!el||el.hidden)) delete PD.shown[id]; }
@@ -2744,8 +2829,11 @@ function pendCheck(){ const g=S.g; if(!g||annBusy()) return; const P=g.pend||{};
     if(p.k==="lay"){ PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openLay(id,p); return; }
     if(p.k==="pick"){ if(PK.open) return; PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openPick(p.s,p.n,p.why||"nagroda",id); return; }
     if(p.k==="pex"){ PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openPex(id,p); return; }
+    if(p.k==="discI"&&AD.open&&AD.seat===p.s&&phaseOf(g)==="act"){ if(!AD.mini) continue; AD.mini=false; renderAD(); continue; }
     if(p.k==="discI"){ PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openDiscI(id,p); return; }
     if(p.k==="rez"){ PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openRez(id,p); return; }
+    if(p.k==="fdisc"){ PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openFreeDisc(id,p); return; }
+    if(p.k==="warKI"){ if(Object.keys(P).some(k=>P[k]&&P[k].k==="warKI"&&(P[k].o||0)<(p.o||0))) continue; PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openWarKI(id,p); return; }
     if(p.k==="war1"){ PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } const el=dlg("war1dlg","Nagroda za wojnę");
       el.innerHTML=`<header><div><h3>Wojna – 1. miejsce</h3><p class="an">${swatch(p.s)} ${esc(seatName(p.s))}: wybierz nagrodę.</p></div></header><div class="row"><button class="btn" id="w1X" title="Zamknij – okno wróci przy następnym ruchu">Zamknij</button><button class="btn primary" data-w1="imp">Karta imperialna</button><button class="btn primary" data-w1="dip">Ruch na torze dyplomacji</button><button class="btn primary" data-w1="h">Chwała</button></div>`;
       el.hidden=false; el.querySelector("#w1X").onclick=()=>{ el.hidden=true; delete PD.shown[id]; PD.later=id; }; el.querySelectorAll("[data-w1]").forEach(b=>b.onclick=()=>{ const k=b.dataset.w1, t=tx(p.s); if(k==="imp") t.imp(); if(k==="dip") txDip(t,p.s,1); if(k==="h") takeGlory(t,p.s);
@@ -2902,7 +2990,7 @@ function kiOptText(o){
     case "war": return `Znacznik wojny +${o.n}`;
     case "back": return `Zapłać ${Object.keys(o.cost).map(k=>o.cost[k]+" "+RNAME[k]).join(", ")} i zabierz swój pionek z pola (karta przechodzi do następnego gracza)`;
     case "amb3": return "Kup 3. ambasadora za 3 złota (2, jeśli ktoś już kupił)";
-    case "fortG": return "Fort bez kosztu chwały";
+    case "fortG": return "+1 chwała (żeton z toru, z jego kosztem)";
   } return ""; }
 function kiDipText(o){
   switch(o.t){
@@ -2983,7 +3071,7 @@ function playKI(){ const s=KP.seat, id=KP.id, c=S.g.cards[id], K=KI[c.n]||{dip:[
       if(o.t==="res"){ t.res(o.r,nv(o.n)); done.push(kiOptText(o)); }
       if(o.t==="col"){ t.pl("colMod",(S.g.players[s].colMod||0)+o.n); done.push(`+${o.n} do kolonizacji`); }
       if(o.t==="war"){ txWar(t,o.n); done.push(`wojna +${o.n}`); }
-      if(o.t==="fortG"){ t.pl("kiDisc",{...kiOf(s),fortG:1}); done.push("fort bez chwały"); }
+      if(o.t==="fortG"){ takeGlory(t,s); done.push("+1 chwała z toru (np. na fort)"); }
       if(o.t==="two"){ const aa=o.a.slice(); after=()=>{ if(!AD.open||AD.seat!==s) openField("kia",s,null); AD.kiTwo=aa; renderAD(); }; done.push(kiOptText(o)); }
       if(o.t==="any"){ after=()=>{ if(!AD.open||AD.seat!==s) openField("kia",s,null); AD.sub=(AD.sub||0)+1; renderAD(); }; done.push("dowolna akcja"); }
       if(o.t==="any2"){ t.res("i",-1); after=()=>{ if(!AD.open||AD.seat!==s) openField("kia",s,null); AD.sub=(AD.sub||0)+2; renderAD(); }; done.push("1 wpływ → 2 dowolne akcje"); }
@@ -2991,7 +3079,12 @@ function playKI(){ const s=KP.seat, id=KP.id, c=S.g.cards[id], K=KI[c.n]||{dip:[
       if(o.t==="ex"){ after=()=>{ openField("kiex",s,null); AD.kiEx=o; renderAD(); }; done.push(kiOptText(o)); }
       if(o.t==="amb3"){ const b=S.g.amb3||{}; if(b[s]) done.push("3. ambasador już kupiony – bez efektu"); else { const price=Object.values(b).some(Boolean)?2:3; t.res("g",-price); t.top("amb3",{[s]:true},{[s]:null}); txLevel(t,s,"car",1); const T=trayOf(seatIdx(s),seatsInPlay(S.g).length); t.piece(`amb_${s}_2`,T.x+200,T.y+120); done.push(`3. ambasador za ${price} zł`); } }
       if(o.t==="back"){ for(const k in o.cost) t.res(k,-o.cost[k]); after=()=>openField("kiback",s,null);
-        if(PASS_CARDS.includes(c.n)){ const ord=turnOrder(S.g), nx=ord[(ord.indexOf(s)+1)%ord.length]; t.card(id,{z:"hand",o:nx,f:true,pl:null}); done.push(`karta przechodzi do gracza ${seatName(nx)}`); } }
+        if(PASS_CARDS.includes(c.n)){ const ord=turnOrder(S.g), nx=ord[(ord.indexOf(s)+1)%ord.length], pu=[...new Set([...(c.pu||[]),s])];
+          /* pełny obieg: każdy gracz raz użył karty – karta wypada z gry */
+          if(ord.every(x=>pu.includes(x))){ t.card(id,{z:"box",o:null,f:false,pl:null,pu}); done.push("karta zrobiła pełny obieg i wypada z gry"); }
+          else { const inH=Object.keys(S.g.cards).filter(k=>{ const q=S.g.cards[k]; return q.k==="imp"&&q.z==="hand"&&q.o===nx; }).length;
+            t.card(id,{z:"hand",o:nx,f:true,pl:null,pu}); done.push(`karta przechodzi do gracza ${seatName(nx)}`);
+            if(inH>=impLimit(levelOf(nx,"i"))) pendAdd(t,nx,"discI",1); } } }
     }
   }
   KP.open=false; KP.sel={}; dlg("kpdlg","").hidden=true;
@@ -3015,11 +3108,11 @@ function pactsCancelAll(base){ const P=S.g.pacts||{}, pp={}, bb={}; let n=0;
   Object.keys(P).forEach(k=>{ if(!P[k]) return; pp[k]=null; bb[k]=P[k]; if(P[k].st==="on"){ pactUndo(base,P[k]); n++; } });
   if(Object.keys(pp).length){ base.patch.pacts={...(base.patch.pacts||{}),...pp}; base.before.pacts={...bb,...(base.before.pacts||{})}; } return n; }
 /* ===== agresja: obrona ofiary i rozstrzygnięcie ===== */
-function defendAgr(cards,gold){ const A=S.g.agr; if(!A||A.st!=="wait") return; const v=A.to, t=tx(v);
+function defendAgr(cards,gold,glory){ glory=glory||0; const A=S.g.agr; if(!A||A.st!=="wait") return; const v=A.to, t=tx(v);
   const full=cards.some(id=>(KI[S.g.cards[id].n]||{}).sh==="X"), sh=cards.reduce((a,id)=>a+((KI[S.g.cards[id].n]||{}).sh==="X"?0:((KI[S.g.cards[id].n]||{}).sh||0)),0);
-  cards.forEach(id=>t.card(id,{z:"box",o:null})); if(gold) t.res("g",-gold);
-  const ok= full || sh+gold>=A.diff;
-  const notes=[`obrona: ${full?"pełna ochrona":`${sh} tarcz + ${gold} zł`} wobec różnicy siły ${A.diff}`];
+  cards.forEach(id=>t.card(id,{z:"box",o:null})); if(gold) t.res("g",-gold); if(glory) t.res("h",-glory);
+  const ok= full || sh+gold+glory>=A.diff;
+  const notes=[`obrona: ${full?"pełna ochrona":`${sh} tarcz + ${gold} zł${glory?` + ${glory} chwały`:""}`} wobec różnicy siły ${A.diff}`];
   if(ok){ notes.push("agresja odparta"); }
   else { const at=tx(A.from,t);
     if(A.k==="res"){ const have=t.resNow(A.r==="c"?"x":A.r); if(A.r==="c"){ txVP(t,v,-A.n); txVP(at,A.from,A.n); notes.push(`agresor zabiera ${A.n} kultury`); }
@@ -3038,16 +3131,16 @@ function renderAgr(){ const A=S.g.agr, el=dlg("agrdlg","Agresja");
   if(el._sig===JSON.stringify(A)+handImp(A.to)&&!el.hidden) return; el._sig=JSON.stringify(A)+handImp(A.to);
   const v=A.to, ids=Object.keys(S.g.cards).filter(id=>{ const c=S.g.cards[id]; return c&&c.z==="hand"&&c.o===v&&c.k==="imp"; });
   const what=A.k==="res"?`zabierze Ci ${A.n} ${RNAME[A.r]}`:A.k==="col"?"zabierze Ci kolonię":"położy Twojego robotnika (nie wyprodukuje w najbliższej produkcji)";
-  el.innerHTML=`<header><div><h3>Agresja na gracza ${esc(seatName(v))}</h3><p class="an">${esc(seatName(A.from))} atakuje: ${what}. Różnica siły: <b>${A.diff}</b>. Obrona: tarcze z zagranych kart imperialnych + złoto (1 złoto = 1 punkt). Karty i złoto przepadają.</p></div></header>
+  el.innerHTML=`<header><div><h3>Agresja na gracza ${esc(seatName(v))}</h3><p class="an">${esc(seatName(A.from))} atakuje: ${what}. Różnica siły: <b>${A.diff}</b>. Obrona: tarcze z wybranych kart imperialnych + złoto + chwała (1 złoto albo 1 chwała = 1 punkt). Wybrane karty, złoto i chwała przepadają. Obrona równa różnicy siły odpiera agresję.</p></div></header>
    <div class="mk">${ids.map(id=>{ const K=KI[S.g.cards[id].n]||{}; return `<button class="mc" data-def="${id}" aria-pressed="false"><img src="${faceSrc("imp",S.g.cards[id].n)}" alt=""><span>${K.sh==="X"?"pełna ochrona":`tarcze: ${K.sh||0}`}</span></button>`; }).join("")||"<p class='an'>Brak kart na ręce.</p>"}</div>
-   <div class="row"><label>Złoto na obronę <input type="number" id="defG" min="0" max="${(S.g.players[v].res||{}).g||0}" value="0"></label></div>
+   <div class="row"><label>Złoto na obronę <input type="number" id="defG" min="0" max="${(S.g.players[v].res||{}).g||0}" value="0"></label><label>Chwała na obronę <input type="number" id="defH" min="0" max="${(S.g.players[v].res||{}).h||0}" value="0"></label></div>
    <p class="an" id="defSum"></p>
    <div class="row"><button class="btn primary" id="defGo">Broń się</button><button class="btn" id="defNo">Nie bronię się</button></div>`;
-  const chosen=new Set(); const sum=()=>{ let full=false,sh=0; chosen.forEach(id=>{ const K=KI[S.g.cards[id].n]||{}; if(K.sh==="X") full=true; else sh+=K.sh||0; }); const g=parseInt(el.querySelector("#defG").value,10)||0;
-    el.querySelector("#defSum").textContent= full?"Pełna ochrona – agresja zostanie odparta.":`Obrona: ${sh} tarcz + ${g} zł = ${sh+g} z ${A.diff} potrzebnych. ${sh+g>=A.diff?"Wystarczy.":"Za mało."}`; };
+  const chosen=new Set(); const sum=()=>{ let full=false,sh=0; chosen.forEach(id=>{ const K=KI[S.g.cards[id].n]||{}; if(K.sh==="X") full=true; else sh+=K.sh||0; }); const g=Math.min((S.g.players[v].res||{}).g||0,parseInt(el.querySelector("#defG").value,10)||0)+Math.min((S.g.players[v].res||{}).h||0,parseInt(el.querySelector("#defH").value,10)||0);
+    el.querySelector("#defSum").textContent= full?"Pełna ochrona – agresja zostanie odparta.":`Obrona: ${sh} tarcz + ${g} (złoto i chwała) = ${sh+g} z ${A.diff} potrzebnych. ${sh+g>=A.diff?"Wystarczy.":"Za mało."}`; };
   el.querySelectorAll("[data-def]").forEach(b=>b.onclick=()=>{ const id=b.dataset.def; if(chosen.has(id)) chosen.delete(id); else chosen.add(id); b.setAttribute("aria-pressed",chosen.has(id)); b.style.borderColor=chosen.has(id)?"var(--brass-2)":""; sum(); });
-  el.querySelector("#defG").oninput=sum; sum();
-  el.querySelector("#defGo").onclick=()=>{ el.hidden=true; defendAgr([...chosen],parseInt(el.querySelector("#defG").value,10)||0); };
+  el.querySelector("#defG").oninput=sum; el.querySelector("#defH").oninput=sum; sum();
+  el.querySelector("#defGo").onclick=()=>{ el.hidden=true; defendAgr([...chosen],Math.min((S.g.players[v].res||{}).g||0,parseInt(el.querySelector("#defG").value,10)||0),Math.min((S.g.players[v].res||{}).h||0,parseInt(el.querySelector("#defH").value,10)||0)); };
   el.querySelector("#defNo").onclick=()=>{ el.hidden=true; defendAgr([],0); };
   el.hidden=false; }
 
