@@ -702,7 +702,7 @@ const Store = (()=>{
   async function loadProfile(){ const { data:{ session } } = await sb.auth.getSession(); if(!session){ user=null; return null; }
     const r=await sb.from("profiles").select("login,seat_name,is_admin").eq("id",session.user.id).maybeSingle(); user=r.data||null; return user; }
   async function signIn(login,pw){ const r=await sb.auth.signInWithPassword({email:em(login),password:pw}); if(r.error) throw r.error; return loadProfile(); }
-  async function signOut(){ try{ await sb.auth.signOut(); }catch(e){} user=null; }
+  async function signOut(){ try{ await sb.auth.signOut({scope:"local"}); }catch(e){} user=null; }
   async function profiles(){ const r=await sb.from("profiles").select("login,seat_name,is_admin").order("login"); return r.data||[]; }
   async function create(code,data){
     if(mode==="local"){ lsSet("ta:"+code,data); const idx=lsGet("ta:index")||[]; idx.unshift(code); lsSet("ta:index",idx.slice(0,20)); if(bc) bc.postMessage({code}); return; }
