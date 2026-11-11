@@ -796,7 +796,8 @@ function showLogin(next){
       <label class="label" for="lgL">Login</label><input type="text" id="lgL" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required>
       <label class="label" for="lgP">Hasło</label><input type="password" id="lgP" name="password" autocomplete="current-password" required>
       <div class="row"><button class="btn primary" type="submit" id="lgGo">Zaloguj</button><span class="err" id="lgErr" role="alert"></span></div>
-    </form></div></div>`;
+    </form>
+    <p class="muted" style="text-align:center;margin:0"><a href="terra/" style="color:var(--brass-2,#e8c766)">O grze Terra Altera</a> · <a href="terra/indexang.html" style="color:var(--brass-2,#e8c766)">About the game</a></p></div></div>`;
   const f=document.getElementById("loginF"); document.getElementById("lgL").focus();
   f.onsubmit=async ev=>{ ev.preventDefault(); const b=document.getElementById("lgGo"), e=document.getElementById("lgErr"); b.disabled=true; e.textContent="";
     try{ const u=await Store.signIn(document.getElementById("lgL").value,document.getElementById("lgP").value); if(!u) throw new Error("brak profilu"); (next||showStart)(); }
