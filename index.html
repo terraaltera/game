@@ -1035,11 +1035,13 @@ document.getElementById("helpClose").onclick=()=>document.getElementById("help")
    ========================================================================= */
 const Act = {
   maxZ(){ let m=0; const g=S.g; for(const id in g.pieces) m=Math.max(m,g.pieces[id].r||0); for(const id in g.cards) m=Math.max(m,g.cards[id].r||0); return m; },
-  commit(patch,before,msg,who){
+  commit(patch,before,msg,who,flags){
     /* aktywny gracz zmienia się tylko przyciskiem „Koniec ruchu” (albo zmianą fazy); w trybie jednego komputera ruchy zapisują się na aktywnego gracza */
     const t=Date.now(); const key=t+"_"+S.me+"_"+Math.floor(Math.random()*1000);
     const full = JSON.parse(JSON.stringify(patch));
-    if(msg) (full.log||(full.log={}))[key]={t,s:who==="-"?null:(who||S.me),m:msg,b:before||null}; /* who "-" = wpis niezależny od gracza */
+    if(msg) (full.log||(full.log={}))[key]={t,s:who==="-"?null:(who||S.me),m:msg,b:before||null,...(flags&&flags.bar?{bar:1}:{})}; /* who "-" = wpis niezależny od gracza; bar = dobrana zakryta karta imperialna (bariera cofania) */
+    /* stan okna akcji sprzed tej zmiany – do częściowego cofnięcia ruchu (po barierze) */
+    if(msg&&AD.open) try{ ADSNAP[key]=JSON.stringify(AD,(k,v)=>typeof v==="function"?undefined:v); }catch(e){}
     full.drv=CID;   // ten komputer zrobił ostatni ruch – on prowadzi fazy automatyczne
     // przycinanie dziennika do 80 wpisów
     const keys=Object.keys(S.g.log||{}).filter(k=>S.g.log[k]).sort();
@@ -1114,7 +1116,7 @@ const Act = {
     const k=keys[keys.length-1]; const e=log[k];
     const patch=JSON.parse(JSON.stringify(e.b)); patch.log={[k]:null};
     /* bez wpisu „cofa ruch” – cofnięte wpisy po prostu znikają z dziennika */
-    PK.open=false; { const pe=document.getElementById("pickdlg"); if(pe) pe.hidden=true; } if(typeof closeCF==="function") closeCF();
+    PK.open=false; ["pickdlg","acaddlg"].forEach(d=>{ const pe=document.getElementById(d); if(pe) pe.hidden=true; }); if(typeof closeCF==="function") closeCF();
     Store.deepMerge(S.g,patch); Table.render(); Store.patch(S.code,patch);
     /* cel publiczny cofa się razem z ruchem, który go spowodował */
     if(/^osiąga cel publiczny/.test(e.m||"")) this.undo();
@@ -1206,7 +1208,7 @@ function tx(seat,base){
   t.top=(key,val,old)=>{ t.patch[key]={...(t.patch[key]||{}),...val}; t.before[key]={...(old||{}),...(t.before[key]||{})}; return t; };
   t.pl=(key,val)=>{ if(!(key in t.before.players[seat])){ const o=S.g.players[seat][key]; t.before.players[seat][key]= o===undefined?null:JSON.parse(JSON.stringify(o)); } t.patch.players[seat][key]=val; return t; };
   t.note=s=>{ t.notes=(t.notes||[]).concat(s); return t; };
-  t.go=msg=>{ Act.commit(t.patch,t.before,msg+(t.notes&&t.notes.length?" · "+t.notes.join(", "):""),seat);
+  t.go=msg=>{ Act.commit(t.patch,t.before,msg+(t.notes&&t.notes.length?" · "+t.notes.join(", "):""),seat,{bar:!!t.gotImp});
     /* zapamiętane kliknięcie robotnika na planszy dotyczy tylko tego jednego ruchu – po innej akcji (np. odkryciu) nie może zamienić budowy w przeniesienie */
     AD.src=null;
     if(t.upg&&AD.open&&AD.seat===seat&&phaseOf(S.g)==="act"){ AD.bup={n:(AD.bup&&AD.bup.n||0)+t.upg,target:t.upgT||null}; if(AD.open) setTimeout(()=>{ if(AD.open) renderAD(); },0); }
@@ -2922,7 +2924,14 @@ function undoAny(){
   /* gracz (nie admin): tylko swój bieżący ruch, przed „Koniec ruchu” */
   if(Store.mode==="sb"&&!isAdmin()){ if(S.g.turn!==S.me||!turnEntries(S.g).length){ UI.toast("Możesz cofnąć tylko swój bieżący ruch (przed „Koniec ruchu”)."); return; } undoTurn(); return; }
   if(phaseOf(S.g)==="act"){ if(turnEntries(S.g).length) undoTurn(); else UI.toast("W tym ruchu nie ma jeszcze nic do cofnięcia."); } else Act.undo(); }
-function undoTurn(){ const g=S.g; let k=0; while(turnEntries(S.g).length&&k<60){ Act.undo(); k++; }
+const ADSNAP={};
+function undoTurn(){ const g=S.g; let k=0, snap=null, hitBar=false; const adm=isAdmin();
+  while(turnEntries(S.g).length&&k<60){ const L=turnEntries(S.g), last=L[L.length-1], e=(S.g.log||{})[last];
+    /* bariera: po dobraniu zakrytej karty imperialnej gracz nie cofa tej i wcześniejszych akcji (admin cofa wszystko) */
+    if(!adm&&e&&e.bar){ hitBar=true; break; }
+    snap=ADSNAP[last]||snap; Act.undo(); k++; }
+  if(hitBar){ if(snap&&AD.open){ try{ Object.assign(AD,JSON.parse(snap)); }catch(e){} renderAD(); }
+    UI.toast(k?"Cofnięto ruch do chwili wzięcia karty imperialnej – wcześniejszych akcji nie można już cofnąć.":"Po wzięciu karty imperialnej z talii tego ruchu nie można już cofnąć."); return; }
   closeAD(); UI.toast(k?"Cofnięto cały ruch.":"W tym ruchu nie ma jeszcze nic do cofnięcia.");
   /* po cofnięciu zostajemy na planszy gracza, który ma ruch (plansza, ręka i panel tego gracza) */
   if(g.turn&&seatsInPlay(g).includes(g.turn)){ if(S.auto) S.me=g.turn; S.pv=g.turn; Cam.preset("p"+seatIdx(g.turn)); Table.render(true); } }
@@ -2957,7 +2966,8 @@ function playSpot(seat){ const arr=seatsInPlay(S.g), i=arr.indexOf(seat), T=tray
   const n=Object.values(S.g.cards).filter(c=>c&&c.z==="table"&&c.pl===seat).length;
   const per=Math.max(1,Math.floor((T.w-40)/120)); return [T.x+20+CARD.w/2+(n%per)*120, PLAY_Y+Math.floor(n/per)*60]; }
 const KP={open:false};
-function openPlayImp(id,ph){ const c=S.g.cards[id]; Object.assign(KP,{open:true,id,ph,seat:c&&c.o?c.o:S.me}); renderKP(); }
+function dipKIPlayed(s){ const r=roundOf(S.g); return Object.values(S.g.cards||{}).some(c=>c&&c.k==="imp"&&c.pl===s&&c.ph==="dip"&&c.rd===r&&c.z==="table"); }
+function openPlayImp(id,ph){ if(ph==="dip"){ const c0=S.g.cards[id], s0=c0&&c0.o?c0.o:S.me; if(dipKIPlayed(s0)){ UI.toast("W tej fazie dyplomacji zagrałeś już kartę imperialną – następną możesz zagrać w fazie akcji."); return; } } const c=S.g.cards[id]; Object.assign(KP,{open:true,id,ph,seat:c&&c.o?c.o:S.me}); renderKP(); }
 function playedMenu(id){ const c=S.g.cards[id], s=c.pl, o=turnOrder(S.g), nx=o[(o.indexOf(s)+1)%o.length];
   return [["Połóż na spód talii",()=>Act.toDeck(id,"bottom")],
     ["Usuń kartę z gry",()=>Act.commit({cards:{[id]:{z:"box"}}},{cards:{[id]:{...c}}},"usuwa zagraną kartę imperialną z gry",s)],
@@ -3086,13 +3096,15 @@ function renderKP(){ const el=dlg("kpdlg","Zagranie karty imperialnej"); if(!KP.
   el.querySelector("#kpGo").onclick=()=>playKI();
   el.hidden=false; }
 function playKI(){ const s=KP.seat, id=KP.id, c=S.g.cards[id], K=KI[c.n]||{dip:[],act:[]}, sel=KP.sel, dip=KP.ph==="dip";
+  /* w fazie dyplomacji gracz zagrywa najwyżej 1 kartę imperialną w rundzie */
+  if(dip&&dipKIPlayed(s)){ UI.toast("W tej fazie dyplomacji zagrałeś już kartę imperialną – następną możesz zagrać w fazie akcji."); KP.open=false; renderKP(); return; }
   if(!dip&&sel.act===undefined&&K.act.length){ UI.toast("Wybierz jedną opcję z karty."); return; }
   const agr=dip&&K.dip.find(o=>o.t==="agr");
   if(agr&&seatsInPlay(S.g).some(x=>x!==s&&strOf(x)<strOf(s))&&(!sel.target||(agr.k==="res"&&sel.aopt===undefined))){ UI.toast("Wybierz cel agresji"+(agr.k==="res"?" i zasób.":".")); return; }
   const pact=dip&&K.dip.find(o=>o.t==="pact")&&seatsInPlay(S.g).length>=3?K.dip.find(o=>o.t==="pact"):null;
   if(pact&&(!sel.partner||sel.side===undefined)){ UI.toast("Wybierz partnera paktu i swoją stronę."); return; }
   const t=tx(s), [x,y]=playSpot(s), done=[]; let after=null;
-  t.card(id,{z:"table",o:null,f:true,x:Math.round(x),y:Math.round(y),pl:s,ph:KP.ph,r:Act.maxZ()+1});
+  t.card(id,{z:"table",o:null,f:true,x:Math.round(x),y:Math.round(y),pl:s,ph:KP.ph,r:Act.maxZ()+1,rd:roundOf(S.g)});
   if(!dip) t.top("kiUse",{[s]:S.g.turnT||1},{[s]:(S.g.kiUse||{})[s]||null});
   if(dip){
     txDip(t,s,1); done.push("tor dyplomacji");
