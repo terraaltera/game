@@ -786,7 +786,7 @@ function seatsInPlay(g){ return (g.order && g.order.length) ? g.order : SEATS.fi
    ========================================================================= */
 const root = document.getElementById("root");
 /* identyfikator tej przeglądarki: komputer, który założył stół, wykonuje jednorazowe czynności startowe */
-const CID=(()=>{ try{ let v=localStorage.getItem("ta-cid"); if(!v){ v=Math.random().toString(36).slice(2,10); localStorage.setItem("ta-cid",v); } return v; }catch(e){ return Math.random().toString(36).slice(2,10); } })();
+const CID=(()=>{ try{ let v=sessionStorage.getItem("ta-cid"); if(!v){ v=Math.random().toString(36).slice(2,10); sessionStorage.setItem("ta-cid",v); } return v; }catch(e){ return Math.random().toString(36).slice(2,10); } })();
 /* ===== ekran logowania ===== */
 function showLogin(next){
   stopTable(); S.built=false;
@@ -2876,7 +2876,7 @@ function pendCheck(){ const g=S.g; if(!g||annBusy()) return; const P=g.pend||{};
     if(p.k==="acad"){ PD.shown[id]=1; if(!genOptions(p.s).length){ pendDone(id); return; } if(S.auto){ S.me=p.s; S.pv=p.s; } openAcad(id,p); return; }
     if(p.k==="loseI"){ PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openLose(p.s,id); return; }
     if(p.k==="lay"){ PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openLay(id,p); return; }
-    if(p.k==="pick"){ if(PK.open) return; PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openPick(p.s,p.n,p.why||"nagroda",id); return; }
+    if(p.k==="pick"){ if(PK.open){ const pe=document.getElementById("pickdlg"); if(pe&&!pe.hidden) return; PK.open=false; } PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openPick(p.s,p.n,p.why||"nagroda",id); return; }
     if(p.k==="pex"){ PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openPex(id,p); return; }
     if(p.k==="discI"&&AD.open&&AD.seat===p.s&&phaseOf(g)==="act"){ if(!AD.mini) continue; AD.mini=false; renderAD(); continue; }
     if(p.k==="discI"){ PD.shown[id]=1; if(S.auto){ S.me=p.s; S.pv=p.s; } openDiscI(id,p); return; }
