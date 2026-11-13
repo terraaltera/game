@@ -1699,9 +1699,9 @@ function renderAD(){
       const O=opts.find(O=>O.j===AD.kij);
       if(O&&!O.direct){
         /* tryb: wzmocnienie akcji pola albo osobna akcja – wybór gracza (żelazna zasada) */
-        const mt=(mode,lab,help)=>{ const i=AH.length; AH.push(()=>{ AD.kim=AD.kim===mode?undefined:mode; }); return `<button class="vbtn" aria-pressed="${AD.kim===mode}" data-h="${i}" data-help="${esc(help)}">${lab}</button>`; };
+        const mt=(mode,lab,help)=>{ const i=AH.length; AH.push(()=>{ AD.kim=mode; }); return `<button class="vbtn" aria-pressed="${AD.kim===mode}" data-h="${i}" data-help="${esc(help)}">${lab}</button>`; };
         detail+=`<div class="kimode">${O.fld.length?mt("field",`${icoHTML(FIELD_ICO[k]||"crown","tico sm")} Wzmocnij akcję pola`,`Zniżka z karty dolicza się do akcji pola ${F.n} (sumuje się ze zniżką pola).`):""}${O.sep.length?mt("sep",`${icoHTML("crown","tico sm")} Osobna akcja`,"Karta daje dodatkową, osobną akcję z tą zniżką – akcje pola zostają do wykonania."):""}</div>`;
-        if(AD.kim){ const ents=AD.kim==="field"?O.fld:O.sep; if(ents.some(e=>e.wk&&!/^m:/.test(e._k))) detail+=wkSel(); detail+=optRows(ents,false,true); } } }
+        if(AD.kim){ const ents=AD.kim==="field"?O.fld:O.sep; if(ents.some(e=>e.wk&&!/^m:/.test(e._k))) detail+=wkSel(); detail+=optRows(ents,false,true); if(ents.some(e=>/^m:/.test(e._k))) detail+=`<p class="ohint">Kliknij podświetloną kartę na torze kart nad planszą.</p>`; } } }
     detail+=`</div>`; }
   MKON=new Set(MK.filter(e=>!e.lack.length).map(e=>e._k)); MKSEL=MK;
   const info=groups.filter(G=>!avail(G)&&!(G.ico&&/<p class="okmsg">/.test(G.body))).map(G=>(G.body.match(/<p class="okmsg">[\s\S]*?<\/p>/g)||[]).join("")).join("");
@@ -2127,7 +2127,11 @@ function renderCD(){
   if(q("#cPass")) q("#cPass").onclick=()=>colPass();
   if(q("#cFav")) q("#cFav").onclick=()=>colFav();
   if(q("#cDecl")) q("#cDecl").onclick=()=>colDecline();
-  el.querySelectorAll("[data-spc]").forEach(b=>b.onchange=()=>{ const [pf,,n]=b.dataset.spc.split("|"); const inp=document.getElementById(pf+"m"); if(inp) inp.value=Math.max(0,(parseInt(inp.value,10)||0)+(b.checked?1:-1)*(+n)); });
+  /* zaznaczenie właściwości karty / karty ochrony: modyfikator rośnie, a wpływy, złoto i chwała same się zmniejszają (suma zostaje równa ofercie) */
+  el.querySelectorAll("[data-spc]").forEach(b=>b.onchange=()=>{ const [pf,,n]=b.dataset.spc.split("|"); const inp=document.getElementById(pf+"m"); if(!inp) return; const d=(b.checked?1:-1)*(+n);
+    inp.value=Math.max(0,(parseInt(inp.value,10)||0)+d);
+    let over=d; for(const k of (d>0?["h","g","i"]:["i","g","h"])){ if(!over) break; const f=document.getElementById(pf+k); if(!f) continue; const v=parseInt(f.value,10)||0;
+      if(over>0){ const c=Math.min(v,over); f.value=v-c; over-=c; } else { const seatR=(S.g.players[S.me]||{}).res||{}, cap=Math.max(0,(seatR[k]||0)-v), c=Math.min(cap,-over); f.value=v+c; over+=c; } } });
   el.querySelectorAll("[data-take]").forEach(b=>b.onclick=()=>{ const p=readPay("cp"); if(p.i+p.g+p.h+p.m===st.high) spcUsed("cp",st.win); if(p.i+p.g+p.h+p.m!==st.high){ UI.toast(`Suma płatności musi wynosić ${st.high}.`); return; } if(!payOK(st.win,p)) return; colTake(+b.dataset.take,st.high,p); });
   el.querySelectorAll("[data-take2]").forEach(b=>b.onclick=()=>{ const amt=st.last[st.second]; const p=readPay("cs"); if(p.i+p.g+p.h+p.m===amt) spcUsed("cs",st.second); if(p.i+p.g+p.h+p.m!==amt){ UI.toast(`Suma płatności musi wynosić ${amt}.`); return; } if(!payOK(st.second,p)) return; colTake(+b.dataset.take2,amt,p); });
   el.querySelectorAll("[data-pv]").forEach(i=>{ const [k,n]=i.dataset.pv.split("|"); i.onmouseenter=()=>UI.preview(faceSrc(k,n)); i.onmouseleave=()=>UI.preview(null); });
