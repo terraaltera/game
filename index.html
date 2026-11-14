@@ -787,18 +787,24 @@ function seatsInPlay(g){ return (g.order && g.order.length) ? g.order : SEATS.fi
 const root = document.getElementById("root");
 /* identyfikator tej przeglądarki: komputer, który założył stół, wykonuje jednorazowe czynności startowe */
 const CID=(()=>{ try{ let v=sessionStorage.getItem("ta-cid"); if(!v){ v=Math.random().toString(36).slice(2,10); sessionStorage.setItem("ta-cid",v); } return v; }catch(e){ return Math.random().toString(36).slice(2,10); } })();
+/* ===== język interfejsu: index.html = polski, en.html = angielski; stół ma własny język (g.lang) ===== */
+const LANG=window.TA_LANG||"pl", LANG_FILE={pl:"index.html",en:"en.html"};
+function goLang(l,hash,keep){ if(!keep){ try{ localStorage.setItem("ta-lang",l); }catch(e){} } if(l===LANG||!LANG_FILE[l]) return false; location.replace(LANG_FILE[l]+(hash!=null?hash:location.hash)); return true; }
+const langSwitch=()=>`<div class="row" style="justify-content:center;gap:6px" role="group" aria-label="Język / Language">${["pl","en"].map(l=>`<button class="btn ${l===LANG?"primary":""}" type="button" data-lang="${l}" aria-pressed="${l===LANG}">${l==="pl"?"Polski":"English"}</button>`).join("")}</div>`;
+const bindLang=()=>root.querySelectorAll("[data-lang]").forEach(b=>b.onclick=()=>goLang(b.dataset.lang));
 /* ===== ekran logowania ===== */
 function showLogin(next){
   stopTable(); S.built=false;
   root.innerHTML=`<div class="screen"><div class="sheet" style="max-width:420px">
     <div class="brand"><h1>Terra Altera</h1><p>A Song of the Forgotten Kingdoms · gra online</p></div>
+    ${langSwitch()}
     <form class="card-box" id="loginF" autocomplete="on"><h2>Logowanie</h2>
       <label class="label" for="lgL">Login</label><input type="text" id="lgL" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required>
       <label class="label" for="lgP">Hasło</label><input type="password" id="lgP" name="password" autocomplete="current-password" required>
       <div class="row"><button class="btn primary" type="submit" id="lgGo">Zaloguj</button><span class="err" id="lgErr" role="alert"></span></div>
     </form>
     <p class="muted" style="text-align:center;margin:0"><a href="terra/" style="color:var(--brass-2,#e8c766)">O grze Terra Altera</a> · <a href="terra/indexang.html" style="color:var(--brass-2,#e8c766)">About the game</a></p></div></div>`;
-  const f=document.getElementById("loginF"); document.getElementById("lgL").focus();
+  bindLang(); const f=document.getElementById("loginF"); document.getElementById("lgL").focus();
   f.onsubmit=async ev=>{ ev.preventDefault(); const b=document.getElementById("lgGo"), e=document.getElementById("lgErr"); b.disabled=true; e.textContent="";
     try{ const u=await Store.signIn(document.getElementById("lgL").value,document.getElementById("lgP").value); if(!u) throw new Error("brak profilu"); (next||showStart)(); }
     catch(x){ console.warn(x); e.textContent="Zły login albo hasło."; b.disabled=false; } };
@@ -814,12 +820,13 @@ async function showStart(){
   const accs=sbm&&adm?(await Store.profiles()).filter(p=>!p.is_admin):[];
   /* domyślne przypisanie kont do kolorów */
   const DEF={yellow:"adam",red:"mlody",blue:"filip",green:"czapla"}; const acc={...DEF};
-  let multi=true;
+  let multi=true, tlang=LANG;
   let games = (await Store.listGames()).filter(g=>g&&g.code);
   const draw=()=>{
     const seats=SEATS.slice(0,count);
     const userBar=sbm?`<div class="row" style="justify-content:flex-end;gap:10px"><span class="muted">Zalogowany: <b>${esc(U.login)}</b>${adm?" (admin)":""}</span><button class="btn" id="logout">Wyloguj</button></div>`:"";
-    root.innerHTML = `<div class="screen"><div class="sheet">${userBar}
+    const langBar=`<div class="row" style="justify-content:flex-end;gap:6px">${["pl","en"].map(l=>`<button class="btn ${l===LANG?"primary":""}" type="button" data-lang="${l}" aria-pressed="${l===LANG}" style="padding:4px 10px;font-size:13px">${l.toUpperCase()}</button>`).join("")}</div>`;
+    root.innerHTML = `<div class="screen"><div class="sheet">${langBar}${userBar}
     <div class="brand"><h1>Terra Altera</h1><p>A Song of the Forgotten Kingdoms · stół online</p></div>
     ${adm?`<section class="card-box" aria-labelledby="h-new">
       <h2 id="h-new">Nowy stół</h2>
@@ -828,18 +835,20 @@ async function showStart(){
         ${sbm?seats.map(s=>`<div class="row">${swatch(s)}<select data-acc="${s}" style="min-width:220px;padding:6px 8px;font-size:15px" aria-label="Konto gracza: ${SEAT_PL[s]}">${accs.map(p=>`<option value="${esc(p.login)}" ${acc[s]===p.login?"selected":""}>${esc(p.seat_name)} (${esc(p.login)})</option>`).join("")}</select></div>`).join("")
           :seats.map(s=>`<div class="row">${swatch(s)}<input type="text" id="nm-${s}" data-s="${s}" maxlength="24" placeholder="${SEAT_PL[s]}" value="${esc(names[s]||"")}" aria-label="Imię gracza: ${SEAT_PL[s]}"></div>`).join("")}</div>
       ${sbm?`<div><div class="label">Sposób gry</div><div class="row" id="mode"><button class="btn ${multi?"primary":""}" aria-pressed="${multi}" data-m="1">Każdy u siebie</button><button class="btn ${!multi?"primary":""}" aria-pressed="${!multi}" data-m="0">Jeden komputer (test)</button></div></div>`:""}
+      <div><div class="label">Język stołu</div><div class="row" id="tlang">${["pl","en"].map(l=>`<button class="btn ${tlang===l?"primary":""}" aria-pressed="${tlang===l}" data-tl="${l}">${l==="pl"?"Polski":"English"}</button>`).join("")}</div></div>
       <div class="row"><button class="btn primary" id="create">Załóż stół</button><span class="err" id="err1"></span></div>
     </section>`:""}
     ${games.length?`<section class="card-box" aria-labelledby="h-join">
       <h2 id="h-join">${adm?"Ostatnie stoły":"Twoje stoły"}</h2>
       <div class="games">${games.map(g=>{ const ok=g.v===8&&g.order&&g.order.length; return `<div class="game-row"><div><span class="code" style="font-size:17px">${esc(g.code)}</span>
-        <span class="pill">${!ok?"starsza wersja":g.status==="play"?"w grze":"wybór liderów"}</span></div>
+        <span class="pill">${!ok?"starsza wersja":g.status==="play"?"w grze":"wybór liderów"}</span> <span class="pill">${(g.lang||"pl").toUpperCase()}</span></div>
         <div class="who">${g.players?seatsInPlay(g).filter(s=>g.players[s]).map(s=>`${swatch(s)}<span>${esc(g.players[s].name)}</span>`).join(" "):""}</div>
         <div class="row" style="gap:6px">${ok?`<button class="btn" data-open="${esc(g.code)}">Wejdź</button>`:""}${adm?`<button class="btn del" data-del="${esc(g.code)}" title="Usuwa stół na zawsze, dla wszystkich graczy">Usuń stół</button>`:""}</div></div>`; }).join("")}</div>
     </section>`:(adm?"":`<section class="card-box"><p class="muted" style="margin:0">Nie masz jeszcze żadnego stołu. Stół zakłada admin.</p></section>`)}</div></div>`;
     if(document.getElementById("logout")) document.getElementById("logout").onclick=logout;
     root.querySelectorAll("select[data-acc]").forEach(x=>x.onchange=()=>{ acc[x.dataset.acc]=x.value; });
     root.querySelectorAll("#mode button").forEach(b=>b.onclick=()=>{ multi=b.dataset.m==="1"; draw(); });
+    root.querySelectorAll("#tlang button").forEach(b=>b.onclick=()=>{ tlang=b.dataset.tl; draw(); }); bindLang();
     root.querySelectorAll("#cnt button").forEach(b=>b.onclick=()=>{ count=+b.dataset.n; draw(); });
     root.querySelectorAll("input[data-s]").forEach(i=>i.oninput=()=>{ names[i.dataset.s]=i.value; });
     root.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openGame(b.dataset.open));
@@ -851,9 +860,9 @@ async function showStart(){
       const code=rid(); const players={};
       if(sbm){ const used=seats.map(s=>acc[s]); if(new Set(used).size!==used.length){ document.getElementById("err1").textContent="Każde konto może grać tylko jednym kolorem."; return; } }
       seats.forEach(s=>{ const a=sbm&&accs.find(p=>p.login===acc[s]); players[s]={name:a?a.seat_name:((names[s]||"").trim()||SEAT_PL[s]),res:{...START_RES}}; if(a) players[s].login=a.login; });
-      const g={v:8,code,created:Date.now(),n:count,status:"leaders",host:CID,players,order:shuffle(seats.slice()),pick:0,leaders:{},pieces:{},cards:{},log:{},multi:sbm?multi:false,logins:sbm?seats.map(s=>acc[s]):[]};
+      const g={v:8,code,created:Date.now(),n:count,status:"leaders",host:CID,players,order:shuffle(seats.slice()),pick:0,leaders:{},pieces:{},cards:{},log:{},multi:sbm?multi:false,logins:sbm?seats.map(s=>acc[s]):[],lang:tlang};
       document.getElementById("create").disabled=true;
-      try{ await Store.create(code,g); saveSeat(code,seats[0]); try{ sessionStorage.setItem("ta-auto-"+code,(!sbm||!multi)?"1":""); }catch(x){} location.hash=code; openGame(code); }
+      try{ await Store.create(code,g); saveSeat(code,seats[0]); try{ sessionStorage.setItem("ta-auto-"+code,(!sbm||!multi)?"1":""); }catch(x){} if(goLang(tlang,"#"+code,true)) return; location.hash=code; openGame(code); }
       catch(e){ console.warn(e); document.getElementById("err1").textContent="Nie udało się założyć stołu. Spróbuj ponownie."; document.getElementById("create").disabled=false; }
     };
   };
@@ -867,6 +876,7 @@ function openGame(code){
   try{ if(location.hash!=="#"+code) location.hash=code; }catch(e){}
   S.unsub = Store.subscribe(code,(g)=>{
     if(!g){ root.innerHTML=`<div class="screen"><div class="sheet"><div class="card-box"><h2>Nie znaleziono stołu ${esc(code)}</h2><div class="row"><button class="btn" id="back">Wróć</button></div></div></div></div>`; document.getElementById("back").onclick=()=>{location.hash="";showStart();}; return; }
+    if((g.lang||"pl")!==LANG&&LANG_FILE[g.lang||"pl"]){ stopTable(); goLang(g.lang||"pl","#"+code,true); return; }
     S.g=JSON.parse(JSON.stringify(g));
     /* gracz (nie admin) gra zawsze swoim kolorem; stół „jeden komputer” – tylko admin */
     if(Store.mode==="sb"&&!isAdmin()){ const my=seatOfUser(S.g); S.auto=false; S.seatFixed=true; if(my&&S.me!==my){ S.me=my; S.pv=my; saveSeat(code,my); } }
@@ -1602,7 +1612,7 @@ function renderAD(){
       const ents=[]; for(const key in TG) TG[key].e.forEach(e=>{ if(e.pre===j&&e._n>n0) ents.push(e); });
       const okE=ents.filter(e=>!e.lack.length), fld=okE.filter(e=>e.ctx==="field"), sep=okE.filter(e=>e.ctx==="sep");
       /* karta ochrony: kolonizacja/wojna tylko w swoich fazach – nie do ambasadora */
-      const show= o.t==="disc"? okE.length>0 : !["col","war"].includes(o.t)&&!(o.t==="res"&&false);
+      const show= o.t==="disc"? okE.length>0 : !["col","war"].includes(o.t)&&kiAfford(s,o);
       kiOpts.push({j,o,txt:kiOptText(o),ents:okE,fld,sep,show,direct:o.t!=="disc"}); }); }
   const avail=G=>G.ents.some(e=>!e.lack.length)||/<button(?![^>]*disabled)[^>]*data-h/.test(G.body);
   const shown=groups.filter(avail);
@@ -2132,8 +2142,8 @@ function renderCD(){
     inp.value=Math.max(0,(parseInt(inp.value,10)||0)+d);
     let over=d; for(const k of (d>0?["h","g","i"]:["i","g","h"])){ if(!over) break; const f=document.getElementById(pf+k); if(!f) continue; const v=parseInt(f.value,10)||0;
       if(over>0){ const c=Math.min(v,over); f.value=v-c; over-=c; } else { const seatR=(S.g.players[S.me]||{}).res||{}, cap=Math.max(0,(seatR[k]||0)-v), c=Math.min(cap,-over); f.value=v+c; over+=c; } } });
-  el.querySelectorAll("[data-take]").forEach(b=>b.onclick=()=>{ const p=readPay("cp"); if(p.i+p.g+p.h+p.m===st.high) spcUsed("cp",st.win); if(p.i+p.g+p.h+p.m!==st.high){ UI.toast(`Suma płatności musi wynosić ${st.high}.`); return; } if(!payOK(st.win,p)) return; colTake(+b.dataset.take,st.high,p); });
-  el.querySelectorAll("[data-take2]").forEach(b=>b.onclick=()=>{ const amt=st.last[st.second]; const p=readPay("cs"); if(p.i+p.g+p.h+p.m===amt) spcUsed("cs",st.second); if(p.i+p.g+p.h+p.m!==amt){ UI.toast(`Suma płatności musi wynosić ${amt}.`); return; } if(!payOK(st.second,p)) return; colTake(+b.dataset.take2,amt,p); });
+  el.querySelectorAll("[data-take]").forEach(b=>b.onclick=()=>{ const p=readPay("cp"); if(p.i+p.g+p.h+p.m!==st.high){ UI.toast(`Suma płatności musi wynosić ${st.high}.`); return; } if(!payOK(st.win,p)) return; spcUsed("cp",st.win); colTake(+b.dataset.take,st.high,p); });
+  el.querySelectorAll("[data-take2]").forEach(b=>b.onclick=()=>{ const amt=st.last[st.second]; const p=readPay("cs"); if(p.i+p.g+p.h+p.m!==amt){ UI.toast(`Suma płatności musi wynosić ${amt}.`); return; } if(!payOK(st.second,p)) return; spcUsed("cs",st.second); colTake(+b.dataset.take2,amt,p); });
   el.querySelectorAll("[data-pv]").forEach(i=>{ const [k,n]=i.dataset.pv.split("|"); i.onmouseenter=()=>UI.preview(faceSrc(k,n)); i.onmouseleave=()=>UI.preview(null); });
 }
 
@@ -2311,8 +2321,9 @@ function openWarKI(pid,p){ const el=dlg("warkidlg","Wojna – karta ochrony"), i
     t.top("warB",{[p.s]:2},{[p.s]:(S.g.warB||{})[p.s]||null}); fin(t,"zagrywa kartę ochrony w wojnie: +2 siły w tym rozliczeniu"); }); }
 function openLose(seat,pid){ const el=dlg("losedlg","Oddaj kartę imperialną"); const ids=Object.keys(S.g.cards).filter(id=>{ const c=S.g.cards[id]; return c&&c.z==="hand"&&c.o===seat&&c.k==="imp"; });
   el.innerHTML=`<header><div><h3>Oddaj 1 kartę imperialną</h3><p class="an">Wydarzenie „${esc(curEventName())}” · ${esc(seatName(seat))}. Kliknij kartę, którą oddajesz.</p></div><button class="btn" id="lsX">Zamknij</button></header>
-    <div class="mk">${ids.map(id=>`<button class="mc" data-lose="${id}"><img src="${faceSrc("imp",S.g.cards[id].n)}" alt="" data-pv="imp|${S.g.cards[id].n}"><span>Oddaj</span></button>`).join("")||"<p class='an'>Brak kart na ręce.</p>"}</div>`;
+    <div class="mk">${ids.map(id=>`<button class="mc" data-lose="${id}"><img src="${faceSrc("imp",S.g.cards[id].n)}" alt="" data-pv="imp|${S.g.cards[id].n}"><span>Oddaj</span></button>`).join("")||`<p class="an">Brak kart imperialnych na ręce – zamiast karty tracisz 3 punkty kultury.</p><div class="row"><button class="btn primary" id="lsNone">−3 kultury</button></div>`}</div>`;
   el.querySelector("#lsX").onclick=()=>{ el.hidden=true; };
+  const none=el.querySelector("#lsNone"); if(none) none.onclick=()=>{ const t=tx(seat); txVP(t,seat,-3); t.pl("loseImp",0); const P=S.g.pend||{}; const id=pid||Object.keys(P).find(k=>P[k]&&P[k].s===seat&&P[k].k==="loseI"); if(id){ t.patch.pend={...(t.patch.pend||{}),[id]:null}; t.before.pend={...(t.before.pend||{}),[id]:P[id]}; } el.hidden=true; t.go("nie ma karty imperialnej do oddania: −3 kultury (wydarzenie)"); };
   el.querySelectorAll("[data-lose]").forEach(b=>b.onclick=()=>{ const t=tx(seat); t.card(b.dataset.lose,{z:"box",o:null}); t.pl("loseImp",0); const P=S.g.pend||{}; const id=pid||Object.keys(P).find(k=>P[k]&&P[k].s===seat&&P[k].k==="loseI"); if(id){ t.patch.pend={...(t.patch.pend||{}),[id]:null}; t.before.pend={...(t.before.pend||{}),[id]:P[id]}; } el.hidden=true; t.go("oddaje kartę imperialną (wydarzenie)"); });
   el.hidden=false; }
 const UP={open:false};
@@ -3083,7 +3094,7 @@ function renderKP(){ const el=dlg("kpdlg","Zagranie karty imperialnej"); if(!KP.
         if(o.k==="res") body+=`<div class="vb">${o.o.map((x,i)=>`<button class="vbtn" data-kao="${i}" aria-pressed="${KP.sel.aopt===i}">Zabierz ${x.n+curEra()} ${RNAME[x.r]}</button>`).join("")}</div>`; }
     });
   } else {
-    body+=`<p class="an">Wybierz jedną opcję z dolnej części karty:</p><div class="vb">${K.act.map((o,i)=>`<button class="vbtn" data-ka="${i}" aria-pressed="${KP.sel.act===i}">${kiOptText(o)}</button>`).join("")}</div>`;
+    body+=`<p class="an">Wybierz jedną opcję z dolnej części karty:</p><div class="vb">${K.act.map((o,i)=>`<button class="vbtn" data-ka="${i}" aria-pressed="${KP.sel.act===i}" ${kiAfford(KP.seat,o)?"":"disabled"}>${kiOptText(o)}</button>`).join("")}</div>`;
   }
   el.innerHTML=`<header><div><h3>Zagraj kartę imperialną – ${dip?"dyplomacja (górna część)":"akcje (dolna część)"}</h3><p class="an">${esc(seatName(s))} · tarcze na karcie: ${K.sh==="X"?"pełna ochrona przed agresją":K.sh||0}</p></div><button class="btn" id="kpX">Nie zagrywam karty</button></header>
    <div class="kpwrap"><img class="kpimg" src="${faceSrc("imp",c.n)}" alt="Karta imperialna"><div class="kpside">${body}
@@ -3099,6 +3110,12 @@ function renderKP(){ const el=dlg("kpdlg","Zagranie karty imperialnej"); if(!KP.
   el.querySelectorAll("[data-ka]").forEach(b=>b.onclick=()=>{ KP.sel.act=+b.dataset.ka; rr(); });
   el.querySelector("#kpGo").onclick=()=>playKI();
   el.hidden=false; }
+/* opcja karty imperialnej z kosztem: pokazuj tylko, gdy gracza na nią stać */
+function kiAfford(s,o){ const r=(S.g.players[s]||{}).res||{}, b=S.g.amb3||{};
+  if(o.t==="any2"||o.t==="glory") return (r.i||0)>=1;
+  if(o.t==="amb3") return !!b[s]||(r.g||0)>=(Object.values(b).some(Boolean)?2:3);
+  if(o.t==="back") return Object.keys(o.cost||{}).every(k=>(r[k]||0)>=o.cost[k]);
+  return true; }
 function playKI(){ const s=KP.seat, id=KP.id, c=S.g.cards[id], K=KI[c.n]||{dip:[],act:[]}, sel=KP.sel, dip=KP.ph==="dip";
   /* w fazie dyplomacji gracz zagrywa najwyżej 1 kartę imperialną w rundzie */
   if(dip&&dipKIPlayed(s)){ UI.toast("W tej fazie dyplomacji zagrałeś już kartę imperialną – następną możesz zagrać w fazie akcji."); KP.open=false; renderKP(); return; }
@@ -3116,7 +3133,7 @@ function playKI(){ const s=KP.seat, id=KP.id, c=S.g.cards[id], K=KI[c.n]||{dip:[
       if(o.t==="car"){ txCaravan(t,s,1); done.push("ruch karawany"); }
       if(o.t==="col"){ t.pl("colMod",(S.g.players[s].colMod||0)+o.n); done.push(`+${o.n} do kolonizacji`); }
       if(o.t==="war"){ txWar(t,1); done.push("wojna +1"); }
-      if(o.t==="glory"){ t.res("i",-1); takeGlory(t,s); done.push("1 wpływ → chwała"); }
+      if(o.t==="glory"){ if(kiAfford(s,o)){ t.res("i",-1); takeGlory(t,s); done.push("1 wpływ → chwała"); } else done.push("brak wpływu – bez chwały"); }
       if(o.t==="rez"){ pendAdd(t,s,"rez",1); t.patch.pend[Object.keys(t.patch.pend).pop()].end=1; done.push("rezerwacja (wybór karty albo pola w okienku)"); }
       if(o.t==="ex"&&sel.ex&&sel.ex!=="no"){ const [a,b]=sel.ex==="ab"?[o.a,o.b]:[o.b,o.a]; t.res(a,-1); t.res(b,1); done.push(`wymiana 1 ${RNAME[a]} → 1 ${RNAME[b]}`); }
       if(o.t==="pop"){ after=()=>openField("kpop",s,null); done.push("populacja"); }
@@ -3662,6 +3679,7 @@ function bindHand(el){
   root.innerHTML=`<div class="screen"><div class="sheet"><div class="brand"><h1>Terra Altera</h1><p>Łączę ze wspólnym zapisem…</p></div></div></div>`;
   await Store.init();
   const go=()=>{ const code=(location.hash||"").slice(1).toUpperCase(); if(code) openGame(code); else showStart(); };
+  if(!(location.hash||"").slice(1)){ let pref=null; try{ pref=localStorage.getItem("ta-lang"); }catch(e){} if(pref&&pref!==LANG&&goLang(pref,"",true)) return; }
   if(Store.mode==="sb"){ await Store.loadProfile(); if(!Store.user) showLogin(go); else go(); } else go();
   addEventListener("hashchange",()=>{ const c=(location.hash||"").slice(1).toUpperCase(); if(c && c!==S.code && (Store.mode!=="sb"||Store.user)) openGame(c); });
   let rz; addEventListener("resize",()=>{ clearTimeout(rz); rz=setTimeout(()=>{ if(document.getElementById("viewport")) Cam.preset(S.viewName||"main"); },120); });
