@@ -1864,7 +1864,15 @@ function txLevel(t,seat,r,delta){ if(!delta) return t;
     t.notes=(t.notes||[]).concat(`bonus from the track ${PROD_GEN[r]}: ${b.txt}`); }
   return t; }
 function txVP(t,seat,delta){ if(!delta) return t; const pp=t.patch.players[seat]; const old=("vp" in pp)?pp.vp:vpOf(seat);
-  if(!("vp" in t.before.players[seat])) t.before.players[seat].vp=vpOf(seat); pp.vp=old+delta; t.piece(`mk_${seat}_score`,...scorePos(pp.vp,seat)); return t; }
+  if(!("vp" in t.before.players[seat])) t.before.players[seat].vp=vpOf(seat); pp.vp=old+delta; t.piece(`mk_${seat}_score`,...scorePos(pp.vp,seat)); mainBonus(t,seat,"vp30",old,pp.vp); return t; }
+/* premie z planszy głównej (raz w grze): 30 pkt kultury → chwała, 20 na torze siły → karta imperialna */
+const MAIN_BONUS={vp30:{at:30,txt:"30 culture points – glory"},str20:{at:20,txt:"20 on the strength track – Imperial card"}};
+function mainBonus(t,seat,key,old,nv){ const b=MAIN_BONUS[key]; if(!b||old>=b.at||nv<b.at) return t;
+  const pb=(t.patch.players[seat]&&t.patch.players[seat].bon)||{}; if((S.g.players[seat].bon||{})[key]||pb[key]) return t;
+  t.patch.players[seat]=t.patch.players[seat]||{}; t.patch.players[seat].bon={...pb,[key]:true};
+  t.before.players[seat]=t.before.players[seat]||{}; t.before.players[seat].bon={...(t.before.players[seat].bon||{}),[key]:null};
+  if(key==="vp30") takeGlory(t,seat); else t.imp();
+  t.notes=(t.notes||[]).concat(`main board bonus: ${b.txt}`); return t; }
 
 /* upuszczenie znacznika na tor: dociąga do pola i zmienia poziom */
 function trackDrop(id,x,y){
@@ -2421,7 +2429,7 @@ function strPosI(v,i,n){ v=Math.max(0,Math.min(69,v)); let x,y;
 const strPos=(v,s)=>strPosI(v,seatIdx(s),seatsInPlay(S.g).length);
 const strOf=s=>{ const v=S.g.players[s]&&S.g.players[s].str; return v===undefined?1:v; };
 function txStr(t,s,d){ if(!d) return t; const pp=t.patch.players[s]; const old=("str" in pp)?pp.str:strOf(s), nv=Math.max(0,old+d);
-  t.pl("str",nv); t.piece(`mk_${s}_str`,...strPos(nv,s)); return t; }
+  t.pl("str",nv); t.piece(`mk_${s}_str`,...strPos(nv,s)); mainBonus(t,s,"str20",old,nv); return t; }
 const CAR_SPOTS=[[1056,175],[1133,175],[1191,175],[1249,175],[1308,175],[1366,175],[1424,175]];
 const CAR_BON=[null,{vp:1,t:"1 culture"},{i:1,t:"1 influence"},{e:1,t:"1 energy"},{s:1,t:"1 stone"},{g:1,t:"1 gold"},{imp:1,t:"Imperial card"}];
 const carOf=s=>(S.g.players[s]&&S.g.players[s].car)||0;
@@ -2836,8 +2844,8 @@ const EVCMP={1:[["b","str",{carM:1}],["b","c",{res:{i:2}}]],3:[["b","i",{carM:1}
   39:[["w","g",{res:{i:-5}}],["w","s",{vp:-5}]],41:[["w","e",{res:{i:-5}}],["b","c",{vp:5}]]};
 const CAT_PL={str:"strength",e:"energy production",s:"stone production",c:"culture production",g:"gold production",i:"influence production"};
 const catVal=(s,c)=>c==="str"?strOf(s):levelOf(s,c);
-/* remisy: poziom produkcji wpływów, siła, potem produkcja energii, kultury, kamienia i złota */
-const tieVec=s=>[levelOf(s,"i"),strOf(s),levelOf(s,"e"),levelOf(s,"c"),levelOf(s,"s"),levelOf(s,"g")];
+/* remisy (instrukcja): poziom produkcji wpływów, siła, potem produkcja kultury, energii, kamienia i złota */
+const tieVec=s=>[levelOf(s,"i"),strOf(s),levelOf(s,"c"),levelOf(s,"e"),levelOf(s,"s"),levelOf(s,"g")];
 function rankSeats(cat,best){ const key=s=>[catVal(s,cat),...tieVec(s)];
   const cmp=(a,b)=>{ const A=key(a),B=key(b); for(let i=0;i<A.length;i++) if(A[i]!==B[i]) return best?B[i]-A[i]:A[i]-B[i]; return 0; };
   const L=seatsInPlay(S.g).slice().sort(cmp); return L.filter(x=>cmp(x,L[0])===0); }
@@ -2861,7 +2869,7 @@ function doCompare(){ const g=S.g, C=EVCMP[curEventN()]||[], lines=[];
     const res=win.map(s=>{ const tt=tx(s,t); tt.notes=[]; applyCmp(tt,s,R); return `${seatName(s)} (${CAT_PL[cat]}: ${catVal(s,cat)}) – ${tt.notes.join(", ")||cmpText(R)}`; });
     lines.push(`${i+1}. ${bw==="b"?"Best":"Worst"} ${CAT_PL[cat]} → ${cmpText(R)}. ${res.join("; ")}.`); });
   if(!C.length) lines.push("This card has no comparison events.");
-  if(C.length) lines.push("Ties: influence production, strength, production of energy, culture, stone, gold.");
+  if(C.length) lines.push("Ties: influence production, strength, production of culture, energy, stone, gold.");
   annAdd(t,"Events",[`„${curEventName()}”`,...lines],undefined,evIdNow());
   annAdd(t,"Colonization",[]); /* tylko płonący napis – od razu okno licytacji */
   Act.commit(t.patch,t.before,"Comparison events: "+lines.join(" "),"-"); }
