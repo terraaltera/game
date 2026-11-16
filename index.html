@@ -880,7 +880,7 @@ function openGame(code){
     S.g=JSON.parse(JSON.stringify(g));
     /* gracz (nie admin) gra zawsze swoim kolorem; stół „jeden komputer” – tylko admin */
     if(Store.mode==="sb"&&!isAdmin()){ const my=seatOfUser(S.g); S.auto=false; S.seatFixed=true; if(my&&S.me!==my){ S.me=my; S.pv=my; saveSeat(code,my); } }
-    else if(Store.mode==="sb"&&isAdmin()&&g.multi===false&&!S.auto&&!loadSeat(code)){ S.auto=true; }
+    else if(Store.mode==="sb"&&isAdmin()&&g.multi===false&&!S.auto){ let v=null; try{ v=sessionStorage.getItem("ta-auto-"+code); }catch(e){} if(v===null||!loadSeat(code)) S.auto=true; }
     if(S.drag && S.drag.id) return;   // nie przerywaj przeciągania; stan dorysuje się po upuszczeniu
     route(); annCheck();
     clearTimeout(Act._af); Act._af=setTimeout(autoFlow,300);
