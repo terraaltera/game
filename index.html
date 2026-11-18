@@ -870,7 +870,7 @@ async function showStart(){
 }
 
 function openGame(code){
-  stopTable();
+  stopTable(); if(S.code!==code) resetTableUI();
   S.code=code; S.me=loadSeat(code); S.built=false; try{ S.auto=sessionStorage.getItem("ta-auto-"+code)==="1"; }catch(e){ S.auto=false; }
   S.seatFixed=false;
   try{ if(location.hash!=="#"+code) location.hash=code; }catch(e){}
@@ -1137,7 +1137,10 @@ const Act = {
    STÓŁ
    ========================================================================= */
 let resizeBound=false;
-function stopTable(){ closeAD(); closePR(); if(typeof closeDlgs==="function") closeDlgs(); if(S.unsub){ S.unsub(); S.unsub=null; } S.built=false; }
+/* inny stół w tej samej karcie: okna i znaczniki „już pokazane/zamknięte” poprzedniego stołu nie mogą działać na nowym */
+function resetTableUI(){ document.querySelectorAll(".dlg").forEach(e=>{ e.hidden=true; }); Table._evB=null; Table._evs=null;
+  [CD,BD,MD,UP,PK,KP].forEach(o=>{ if(o) o.open=false; }); CD.shut=null; BD.shut=null; MD.closedFor=null; PD.shown={}; if(typeof annReset==="function") annReset(); }
+function stopTable(){ closeAD(); closePR(); if(typeof annReset==="function") annReset(); if(typeof closeDlgs==="function") closeDlgs(); if(S.unsub){ S.unsub(); S.unsub=null; } S.built=false; }
 /* =========================================================================
    ETAP 1 AUTOMATYZACJI: POLA AKCJI (podpowiada i liczy, nie blokuje)
    ========================================================================= */
@@ -2548,10 +2551,14 @@ function colLine(st){ const g=S.g; if(!st||(!st.c1&&!st.c2)) return "W tej rundz
   const nm=id=>id&&g.cards[id]?cardName(g.cards[id]):""; return `Licytacja: ${[nm(st.c1),nm(st.c2)].filter(Boolean).join(" i ")}. Zaczyna ${seatName(st.turn||seatOrderFrom(g.first)[0])}.`; }
 const AN={q:[],busy:false,seen:null,code:null};
 const annBusy=()=>AN.busy||AN.q.length>0;
+/* przerwanie ogłoszeń (wyjście ze stołu, inny stół): chowamy napis i okno podsumowania, kolejka startuje od nowa */
+function annReset(){ AN.q=[]; AN.busy=false; const b=document.getElementById("phban"); if(b){ clearTimeout(b._t); b.hidden=true; b.classList.remove("go"); } const d=document.getElementById("sumdlg"); if(d) d.hidden=true; }
 function annCheck(){ const g=S.g; if(!g) return; const key="ta-ann-"+S.code;
-  if(!AN.seen||AN.code!==S.code){ AN.code=S.code; AN.q=[]; let seen=null; try{ seen=JSON.parse(sessionStorage.getItem(key)||"null"); }catch(e){}
+  /* zabezpieczenie: „zajęte”, a nic nie jest pokazane – ogłoszenie zostało przerwane */
+  if(AN.busy){ const b=document.getElementById("phban"), d=document.getElementById("sumdlg"); if((!b||b.hidden)&&(!d||d.hidden)) AN.busy=false; }
+  if(!AN.seen||AN.code!==S.code){ if(AN.code&&AN.code!==S.code) annReset(); AN.code=S.code; AN.q=[]; let seen=null; try{ seen=JSON.parse(sessionStorage.getItem(key)||"null"); }catch(e){}
     AN.seen=new Set(seen||Object.keys(g.ann||{}).filter(k=>g.ann[k]&&Date.now()-g.ann[k].t>20000)); }
-  const nw=Object.keys(g.ann||{}).filter(k=>g.ann[k]&&!AN.seen.has(k)).sort(); if(!nw.length) return;
+  const nw=Object.keys(g.ann||{}).filter(k=>g.ann[k]&&!AN.seen.has(k)).sort(); if(!nw.length){ if(!AN.busy&&AN.q.length) annNext(); return; }
   nw.forEach(k=>{ AN.seen.add(k); AN.q.push(g.ann[k]); });
   try{ sessionStorage.setItem(key,JSON.stringify([...AN.seen].slice(-60))); }catch(e){}
   annNext(); }
@@ -3371,7 +3378,7 @@ const Table = {
       const nb=document.getElementById("rNext"), nt=`Dalej: ${nextPhaseName(g)} ▸`; if(nb&&nb.textContent!==nt) nb.textContent=nt; }
     if(S.auto&&g.turn&&S.me!==g.turn){ S.me=g.turn; S.pv=g.turn; saveSeat(S.code,S.me); } /* tura przechodzi: widok, panel i ręka idą za aktywnym graczem */
     renderTurn(g); renderAgr();
-    if(g.evB&&S.me&&!this._evB){ this._evB=true; const host=!g.host||g.host===CID; setTimeout(()=>{ if(S.g.evB) applyFirstEvent(); },host?200:9000+Math.random()*2000); }
+    if(g.evB&&S.me&&this._evB!==S.code){ this._evB=S.code; const host=!g.host||g.host===CID; setTimeout(()=>{ if(S.g.evB) applyFirstEvent(); },host?200:9000+Math.random()*2000); }
     /* okno akcji (podświetlenia na planszy) nie zostaje otwarte po zmianie fazy albo tury */
     if(AD.open&&(phaseOf(g)!=="act"||AD.seat!==g.turn)) closeAD();
     annCheck(); pendCheck(); renderRez(); renderGens(); renderMkBar();
