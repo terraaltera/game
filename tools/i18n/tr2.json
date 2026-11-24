@@ -257,5 +257,12 @@
 "jest darmowa": "is free",
 "kostka chwały": "glory cube",
 "na kostkę chwały: −": " for the glory cube: −",
-"chwała z toru (kostka ": "glory from the track (cube "
+"chwała z toru (kostka ": "glory from the track (cube ",
+" na kostkę chwały: −": " for the glory cube: −",
+"Zamknij okno (zwija się – ruch trwa dalej)": "Close the window (it collapses – the move goes on)",
+"Zamknij okno": "Close the window",
+"\" aria-label=\"Zamknij okno\">×</button></div>": "\" aria-label=\"Close the window\">×</button></div>",
+"Brakuje zasobów na koszt łaski cesarskiej.": "Not enough resources to pay for the Imperial Favor.",
+"disabled title=\\\"Brakuje zasobów na koszt łaski\\\"": "disabled title=\\\"Not enough resources to pay for the Imperial Favor\\\"",
+">Weź łaskę cesarską (": ">Take the Imperial Favor ("
 }

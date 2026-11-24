@@ -1,7 +1,7 @@
 <title>Terra Altera online</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus+SC&family=Alegreya+Sans:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus+SC&family=Alegreya+Sans:wght@400;500;700&family=Oswald:wght@700&display=swap">
 <style>
 /* Układ: pełnoekranowy stół (przesuwany i powiększany) + górny pasek, prawy panel graczy, dolna ręka gracza. Jedna, ciemna stylistyka stołu. */
 :root{
@@ -206,6 +206,12 @@ input[type=text]{background:#0f1317;border:1px solid var(--line);border-radius:6
 .mcap{font-family:var(--f-display);font-size:30px;color:var(--brass-2)}
 .mcap span{font-family:var(--f-body);font-size:22px;color:var(--ink-2)}
 .dlg{position:fixed;left:50%;top:96px;transform:translateX(-50%);width:min(760px,calc(100vw - 24px));max-height:calc(100vh - 120px);overflow:auto;z-index:66;background:var(--panel);border:1px solid var(--brass);border-radius:12px;box-shadow:0 18px 44px rgba(0,0,0,.7);padding:14px;display:flex;flex-direction:column;gap:10px}
+.dlgx{position:sticky;top:0;align-self:flex-end;flex:none;z-index:3;width:32px;height:32px;margin:-4px -4px -42px 0;padding:0;border-radius:50%;border:1px solid var(--brass);background:#14171b;color:var(--brass-2);font-size:22px;line-height:28px;text-align:center;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+.dlgx:hover,.dlgx:focus-visible{background:var(--brass);color:#111;outline:none}
+#help .card-box{position:relative}
+#help .card-box>.dlgx{position:absolute;top:10px;right:10px;margin:0}
+.dlg>header,#prod>header{padding-right:40px}
+#act .axbtn{font-size:20px;line-height:1;padding:4px 10px}
 .dlg header{display:flex;justify-content:space-between;gap:10px;cursor:move;user-select:none}
 .mntab{margin-top:4px;font-size:13px;border-collapse:collapse;width:100%}.mntab td{padding:1px 4px}.mntab td:last-child{text-align:right;font-weight:700}.mntab tr.me{color:#f0d68a}.mntab td.mpt{color:#c9b3ff;padding-left:8px}
 .dlg h3{cursor:move}
@@ -226,6 +232,9 @@ input[type=text]{background:#0f1317;border:1px solid var(--line);border-radius:6
 .payrow{display:flex;gap:12px;flex-wrap:wrap}
 .kv{display:flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums}
 .kv .ic,.lv .ic,#prod .ic{width:12px;height:12px;border-radius:3px;display:inline-block;flex:none}
+/* kwadraty zasobów jak na planszy: ciemna obwódka, jasny wewnętrzny brzeg, cieniowanie */
+.r .ic,.kv .ic,.lv .ic,#prod .ic{box-sizing:border-box;border:1.5px solid rgba(0,0,0,.65);background-image:linear-gradient(160deg,rgba(255,255,255,.38),rgba(255,255,255,0) 45%,rgba(0,0,0,.28));box-shadow:inset 0 0 0 1px rgba(255,255,255,.3),0 1px 1px rgba(0,0,0,.4)}
+.r .ic{border-radius:4px}
 .kv .nm{font-size:12px;color:var(--ink-2);flex:1}
 .kv button,.lv button{border:1px solid var(--line);background:#11161a;border-radius:4px;padding:0;line-height:1;font-size:10px;width:22px;height:16px}
 .lv button{width:18px}
@@ -301,11 +310,11 @@ input[type=text]{background:#0f1317;border:1px solid var(--line);border-radius:6
 .gused span{font:700 30px system-ui;color:#ddd;text-shadow:0 2px 4px #000;transform:rotate(-20deg)}
 .gready{position:absolute;border:6px solid #e8c766;border-radius:16px;box-shadow:0 0 26px rgba(232,199,102,.6);animation:tgp 1.8s ease-in-out infinite}
 .genm.spu{width:34px;height:34px}
-.rk{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 5px;margin:0 2px;border-radius:6px;background:var(--c);border:2px solid rgba(0,0,0,.55);box-shadow:inset 0 0 0 2px rgba(255,255,255,.28);color:#111;font-weight:900;font-size:15px;letter-spacing:1.5px;line-height:1;text-shadow:1.5px 0 #fff,-1.5px 0 #fff,0 1.5px #fff,0 -1.5px #fff,1px 1px #fff,-1px -1px #fff,1px -1px #fff,-1px 1px #fff;vertical-align:middle}
-.rk.h{border-color:#666}
+.rk{display:inline-flex;align-items:center;justify-content:center;min-width:27px;height:27px;padding:0 5px;margin:0 2px;box-sizing:border-box;border-radius:7px;background:linear-gradient(160deg,color-mix(in srgb,var(--c) 70%,#fff) 0%,var(--c) 42%,color-mix(in srgb,var(--c) 82%,#000) 100%);border:2px solid var(--d,#222);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c) 55%,#fff),inset 0 0 0 3px color-mix(in srgb,var(--d,#222) 55%,transparent),0 1px 2px rgba(0,0,0,.55);color:#fff;font-family:"Oswald","Alegreya Sans",sans-serif;font-weight:700;font-size:16px;line-height:1;letter-spacing:.5px;-webkit-text-stroke:2.2px var(--d,#222);paint-order:stroke fill;text-shadow:0 1px 0 rgba(0,0,0,.35);vertical-align:middle;white-space:nowrap}
+.rk.h{background:linear-gradient(160deg,#4a4d52,#16181b 55%,#050506);border-color:#000;box-shadow:inset 0 0 0 1.5px #6c7076,0 1px 2px rgba(0,0,0,.55);-webkit-text-stroke:2px #000}
 .aico{width:30px;height:30px;vertical-align:middle;margin-right:6px;flex:none}
 .aico.sm{width:22px;height:22px;margin-right:2px}
-.aico.gear{width:26px;height:26px;padding:2px;margin-right:3px;border-radius:6px;background:#d9d4c7;border:2px solid rgba(0,0,0,.45);box-sizing:border-box}
+.aico.gear{width:26px;height:26px;margin-right:3px;border-radius:50%;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.5))}
 .cfh{display:flex;align-items:center;gap:12px}
 .ckl{font-size:12px;color:#9aa3ad;margin-right:6px;align-self:center}
 .hico{width:52px;height:52px;flex:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
@@ -525,7 +534,7 @@ const DECK_ONE = {era1:"kartę ery I",era2:"kartę ery II",era3:"kartę ery III"
   col1:"kolonię ery I",col2:"kolonię ery II",col3:"kolonię ery III",barb:"kartę barbarzyńców",manu:"tajny manuskrypt",lead:"lidera"};
 const PIECE_PL = {amb:"ambasadora",wrk:"robotnika",gen:"geniusza",tri:"plemię",pyr:"piramidę",fort:"fort",mk:"znacznik",
   disc:"krążek",round:"znacznik rundy",war:"znacznik wojny",shaman:"znacznik szamana",first:"znacznik pierwszego gracza",glory:"kostka chwały"};
-const RES = [["g","Złoto","#e0b230"],["s","Kamień","#8e959b"],["e","Energia","#2f73d6"],["i","Wpływy","#3a9a4a"],["h","Chwała","#1b1d21"]];
+const RES = [["g","Złoto","#d8960e"],["s","Kamień","#a3a6a9"],["e","Energia","#2a62b0"],["i","Wpływy","#5e9c6c"],["h","Chwała","#1b1d21"]];
 const START_RES = {g:3,s:4,e:3,i:5,h:0};
 const START_VP = [1,2,3,4];   // kultura na start według kolejności gry: 1. gracz 0, 2. gracz 1, 3. gracz 3, 4. gracz 4
 
@@ -534,7 +543,7 @@ const CARD = {w:240,h:336}, EVCARD = {w:240,h:452};
 const cardSize = k => k.startsWith("ev") ? EVCARD : CARD;
 const MAIN = {x:0,y:0,w:2646,h:1323};
 const PBOARD = {w:2000,h:1053};
-const asset = p => "assets/" + p;
+const asset = p => "assets/" + p + (p.startsWith("ico/")?"?v=3":"");
 const faceSrc = (k,n) => asset(`${k}/${n}.webp`);
 const backSrc = k => asset(`${k}/back.webp`);
 
@@ -1144,7 +1153,7 @@ function stopTable(){ closeAD(); closePR(); if(typeof annReset==="function") ann
 /* =========================================================================
    ETAP 1 AUTOMATYZACJI: POLA AKCJI (podpowiada i liczy, nie blokuje)
    ========================================================================= */
-const RES_INFO={g:["złoto","#e0b230"],s:["kamień","#8e959b"],e:["energia","#2f73d6"],i:["wpływy","#3a9a4a"],h:["chwała","#1b1d21"]};
+const RES_INFO={g:["złoto","#d8960e"],s:["kamień","#a3a6a9"],e:["energia","#2a62b0"],i:["wpływy","#5e9c6c"],h:["chwała","#1b1d21"]};
 const FIELDS={
   dip:{n:"Dyplomata",r:[90,255,560,545]},
   exp:{n:"Eksplorator",r:[615,290,905,420]},
@@ -1243,8 +1252,8 @@ function cantPay(s,d){ const pl=payPlan(s,d); if(pl.ok) return false;
   const res=(S.g.players[s]||{}).res||{}; const miss=Object.keys(d||{}).filter(r=>d[r]<0&&(res[r]||0)+d[r]<0);
   UI.toast(`Nie stać Cię na to: brakuje ${miss.map(r=>`${-(d[r]+(res[r]||0))} ${RES_INFO[r][0]}`).join(", ")} (chwała jako joker też nie wystarcza).`); return true; }
 /* ikony gry: zasób = kolorowy kwadrat z liczbą (jak na planszy), chwała = czarny kwadrat z gwiazdką */
-const RKC={g:["złoto","#e0b230"],s:["kamień","#8e959b"],e:["energia","#2f73d6"],i:["wpływy","#3a9a4a"],h:["chwała","#111"],c:["kultura","#8a5cc7"]};
-const RK=(r,txt)=>{ const I=RKC[r]||[r,"#666"]; return `<span class="rk${r==="h"?" h":""}" style="--c:${I[1]}" title="${I[0]}">${txt}${r==="h"?"★":""}</span>`; };
+const RKC={g:["złoto","#d8960e","#6b4204"],s:["kamień","#a3a6a9","#3e4043"],e:["energia","#2a62b0","#0f2b5c"],i:["wpływy","#5e9c6c","#12471f"],h:["chwała","#16181b","#000"],c:["kultura","#8e6cc4","#3f2470"],str:["siła","#8a1e22","#3d0709"]};
+const RK=(r,txt)=>{ const I=RKC[r]||[r,"#666"]; return `<span class="rk${r==="h"?" h":""}" style="--c:${I[1]};--d:${I[2]||"#222"}" title="${I[0]}">${txt}${r==="h"?"★":""}</span>`; };
 const AICO={wrk:s=>`<svg class="aico" viewBox="0 0 100 100" aria-hidden="true"><path d="${MEEPLE}" fill="${SEAT_COL[s]||"#888"}" stroke="#111" stroke-width="5"/></svg>`,
   upg:`<svg class="aico" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="#e0731c" stroke="#7a3508" stroke-width="2.5"/><path d="M20 7 L30 19 H23.5 V32 H16.5 V19 H10 Z" fill="#fde9c2" stroke="#7a3508" stroke-width="1.6" stroke-linejoin="round"/></svg>`,
   disc:`<img class="aico" src="${asset("ico/disc.png")}" alt="">`, gear:`<img class="aico gear" src="${asset("ico/gear.png")}" alt="produkcja" title="produkcja">`};
@@ -1722,10 +1731,12 @@ function renderAD(){
   const iEnd=AH.length; AH.push(()=>{ closeAD(); if(myTurn) endTurn(); Cam.preset("main"); });
   const iX=AH.length; AH.push(()=>{ if(myTurn) AD.mini=!AD.mini; else closeAD(); });
   const iU=AH.length; AH.push(()=>{ undoAny(); });
+  /* × : w swojej turze okno się zwija (ruch trwa dalej), poza turą – zamyka */
+  const iC=AH.length; AH.push(()=>{ if(myTurn){ AD.mini=true; renderAD(); } else closeAD(); });
   const iP=AH.length; AH.push(()=>{ closeAD(); passTurn(); Cam.preset("main"); });
   const defHelp=(AD.msg?AD.msg+" ":"")+(shown.length||(kiAllowed&&handKI.length&&!kiUsedThisTurn(s))?"Najedź na ikonę, żeby zobaczyć opis. Kliknij, żeby wybrać.":"Brak dostępnych akcji – zakończ ruch.");
   el.innerHTML=`<div class="ahd" title="Przeciągnij, żeby przesunąć okno">${FIELD_ICO[k]?`<img class="fico" src="${asset("ico/"+FIELD_ICO[k]+".png")}" alt="">`:""}<span class="fhead"><span class="fname">${F.n}</span><span class="who">${swatch(s)} ${esc(seatName(s))}${pawn?" · "+PIECE_PL[pawn.k]:""}</span></span><span class="sp"></span>
-    <button class="btn primary" data-h="${iEnd}" title="${myTurn?"Kończy ruch; kolejka przechodzi na następnego gracza":"Zamyka okno"}">${myTurn?"Koniec ruchu ▸":"Gotowe"}</button>${myTurn?`<button class="btn" data-h="${iP}" title="Kończy akcje w tej rundzie – kolejka Cię pomija">Pas</button>`:""}${myTurn?`<button class="btn" data-h="${iU}" data-help="Cofa cały ruch: przywraca stan gry sprzed postawienia pionka.">Cofnij ruch</button>`:""}<button class="btn" data-h="${iX}" title="${AD.mini?"Rozwiń okno":"Zwiń okno (ruch trwa dalej)"}" aria-label="${AD.mini?"Rozwiń":"Zwiń"}">${AD.mini?"▴":"▾"}</button></div>
+    <button class="btn primary" data-h="${iEnd}" title="${myTurn?"Kończy ruch; kolejka przechodzi na następnego gracza":"Zamyka okno"}">${myTurn?"Koniec ruchu ▸":"Gotowe"}</button>${myTurn?`<button class="btn" data-h="${iP}" title="Kończy akcje w tej rundzie – kolejka Cię pomija">Pas</button>`:""}${myTurn?`<button class="btn" data-h="${iU}" data-help="Cofa cały ruch: przywraca stan gry sprzed postawienia pionka.">Cofnij ruch</button>`:""}<button class="btn" data-h="${iX}" title="${AD.mini?"Rozwiń okno":"Zwiń okno (ruch trwa dalej)"}" aria-label="${AD.mini?"Rozwiń":"Zwiń"}">${AD.mini?"▴":"▾"}</button><button class="btn axbtn" data-h="${iC}" title="${myTurn?"Zamknij okno (zwija się – ruch trwa dalej)":"Zamknij okno"}" aria-label="Zamknij okno">×</button></div>
     <div class="bsecs" ${AD.mini?"hidden":""}>${warn.map(w=>`<p class="awarn">${w}</p>`).join("")}${AD.sub>0?`<div class="subhead">Dowolna akcja główna · pozostało: <b>${AD.sub}</b></div>`:""}
     <div class="atiles">${tiles||""}</div>${info?`<div class="ainfo">${info}</div>`:""}${detail}</div>
     <div class="ahelp" id="ahelp" data-def="${esc(defHelp)}" ${AD.mini?"hidden":""}>${esc(defHelp)}</div>`;
@@ -1824,7 +1835,7 @@ function renderCF(){ const el=dlg("cfmdlg","Potwierdzenie akcji"), T=CF.T; if(!T
 const PROD_KEYS=["e","s","c","g","i"];
 const PROD_NAME={e:"energia",s:"kamień",c:"kultura",g:"złoto",i:"wpływy",car:"karawany",imp:"karty imperialne"};
 const PROD_GEN={e:"energii",s:"kamienia",c:"kultury",g:"złota",i:"wpływów",car:"karawan",imp:"kart imperialnych"};
-const PROD_COL={e:"#2f73d6",s:"#8e959b",c:"#8a5cc7",g:"#e0b230",i:"#3a9a4a",car:"#5d7a4a",imp:"#b98ad6"};
+const PROD_COL={e:"#2a62b0",s:"#a3a6a9",c:"#8e6cc4",g:"#d8960e",i:"#5e9c6c",car:"#5d7a4a",imp:"#b98ad6"};
 const PROD_Y={e:499,s:565.5,c:635,g:704,i:773.5};
 const L_E=[130,182.5,242,406.5,466,525.5,585,644,703.5,763,822.5];
 const PROD_X={e:L_E,c:L_E,
@@ -2058,6 +2069,15 @@ function startRound(){
 
 /* ===== okna dialogowe (kolonizacja, barbarzyńcy) ===== */
 function dlg(id,label){ let el=document.getElementById(id); if(!el){ el=document.createElement("div"); el.id=id; el.className="dlg"; el.setAttribute("role","dialog"); el.setAttribute("aria-label",label); document.body.appendChild(el); dragDlg(el); } return el; }
+/* każde okno ma × w prawym górnym rogu: działa jak przycisk zamknięcia tego okna (Zamknij/Anuluj/OK);
+   okno decyzji bez takiego przycisku tylko się chowa i wróci samo, dopóki decyzja nie zapadnie */
+const XSEL='#cClose,#bClose,#helpClose,#sumOk,[id$="X"]';
+function xClose(el){ const c=[...el.querySelectorAll(XSEL)].find(b=>b.tagName==="BUTTON"&&!b.disabled&&!b.classList.contains("dlgx"));
+  if(c){ c.click(); return; } if(el.id==="prod"){ closePR(); return; } if(el.closest("#help")){ document.getElementById("help").style.display="none"; return; }
+  el.hidden=true; if(el.id==="cfmdlg") closeCF(); }
+function ensureX(el){ if(!el||el.hidden||el.querySelector(":scope>.dlgx")) return; const b=document.createElement("button"); b.type="button"; b.className="dlgx"; b.textContent="×"; b.title="Zamknij okno"; b.setAttribute("aria-label","Zamknij okno");
+  b.addEventListener("pointerdown",e=>e.stopPropagation()); b.onclick=e=>{ e.stopPropagation(); xClose(el); }; el.prepend(b); }
+let xRaf=0; new MutationObserver(()=>{ if(xRaf) return; xRaf=requestAnimationFrame(()=>{ xRaf=0; document.querySelectorAll(".dlg,#prod,#help .card-box").forEach(ensureX); }); }).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["hidden"]});
 /* każde okno można przesunąć, chwytając za nagłówek (albo puste miejsce u góry okna) */
 function dragDlg(el){ el.addEventListener("pointerdown",e=>{ const hd=e.target.closest("header,h3,.an:first-of-type"); if(!hd||!el.contains(hd)||e.target.closest("button,input,select,textarea,a,img")) return; e.preventDefault(); try{ getSelection().removeAllRanges(); }catch(_){}
   const r=el.getBoundingClientRect(), sx=e.clientX, sy=e.clientY; el.style.transform="none"; el.style.left=r.left+"px"; el.style.top=r.top+"px"; hd.setPointerCapture(e.pointerId);
@@ -2105,7 +2125,9 @@ function colTake(which,amount,pay){ const st=S.g.col, seat=S.me, id=which===1?st
   if(isWin){ const other=which===1?st.c2:st.c1; ch.phase= (st.second&&other)?"second":"done"; ch.pick=which; }
   else ch.phase="done";
   colCommit(ch,`${isWin?"wygrywa licytację":"bierze"} ${cardName(c)}${amount?` i płaci ${amount} (${pay.i} wpływów, ${pay.g} złota${pay.h?`, ${pay.h} chwały`:""}${pay.m?`, ${pay.m} z modyfikatorów`:""})`:""}${R&&R.hint&&R.hint!=="darmowe odkrycie terytorium"?` · do zrobienia ręcznie: ${R.hint}`:""} · bonus: ${rewardText(R)}${t.notes?" · "+t.notes.join(", "):""}`,{patch:t.patch,before:t.before,who:seat}); if(t.pick) openPick(seat,t.pick.n,t.pick.why); if(t.upg) openUpgrade(seat,t.upg,"bonus z kolonii"); }
-function colFav(){ const st=S.g.col, seat=S.me, id=st.c2, c=S.g.cards[id]; const t=tx(seat); const [x,y]=cardAreaSpot(seatIdx(seat)); t.card(id,{x,y,r:Act.maxZ()+1});
+/* łaska cesarska z kosztem: gracz bierze ją tylko, gdy stać go na koszt (to jego wybór, więc bez kary −3) */
+function favOK(seat,R){ const r=(S.g.players[seat]||{}).res||{}; return !R||!R.cost||Object.keys(R.cost).every(k=>(r[k]||0)+R.cost[k]>=0); }
+function colFav(){ const st=S.g.col, seat=S.me, id=st.c2, c=S.g.cards[id]; if(!favOK(seat,FAV[c.n])){ UI.toast("Brakuje zasobów na koszt łaski cesarskiej."); return; } const t=tx(seat); const [x,y]=cardAreaSpot(seatIdx(seat)); t.card(id,{x,y,r:Act.maxZ()+1});
   applyReward(t,seat,FAV[c.n]); colCommit({phase:"done",t2:seat},`bierze kartę łaski cesarskiej (${rewardText(FAV[c.n])})${t.notes?" · "+t.notes.join(", "):""}`,{patch:t.patch,before:t.before,who:seat}); if(t.pick) openPick(seat,t.pick.n,t.pick.why); if(t.upg) openUpgrade(seat,t.upg,"bonus z łaski cesarskiej"); }
 function colDecline(){ colCommit({phase:"done"},"rezygnuje z drugiej karty w kolonizacji"); }
 function renderCD(){
@@ -2134,7 +2156,7 @@ function renderCD(){
       const which=st.pick===1?2:1, cid=which===1?st.c1:st.c2, c=g.cards[cid];
       body+=`<p>Drugi w licytacji: <b>${esc(seatName(st.second))}</b> (ostatnia oferta ${st.last[st.second]}).</p>`;
       if(S.me===st.second){
-        if(c.k==="fav") body+=`<div class="row"><button class="btn primary" id="cFav">Weź łaskę cesarską (${rewardText(FAV[c.n])})</button><button class="btn" id="cDecl">Rezygnuję</button></div>`;
+        if(c.k==="fav") body+=`<div class="row"><button class="btn primary" id="cFav" ${favOK(S.me,FAV[c.n])?"":"disabled title=\"Brakuje zasobów na koszt łaski\""}>Weź łaskę cesarską (${rewardText(FAV[c.n])})</button><button class="btn" id="cDecl">Rezygnuję</button></div>`;
         else body+=payInputs("cs",st.last[st.second],st.second)+`<div class="row"><button class="btn primary" data-take2="${which}">Zapłać ${st.last[st.second]} i weź: ${esc(cardName(c))}</button><button class="btn" id="cDecl">Rezygnuję</button></div>`;
       } else body+=`<p class="an">Czeka na decyzję gracza ${esc(seatName(st.second))}.</p>`;
     } else body+=`<p><b>Kolonizacja zakończona.</b>${!st.t1&&!st.t2?" Nikt nie licytował.":""}</p>`;

@@ -76,6 +76,7 @@ POST=[
 ('{zł:"g",kam:"s",ener:"e",wpł:"i"}[m[2]]','{zł:"g",kam:"s",ener:"e",wpł:"i",gold:"g",stone:"s",energy:"e",influence:"i"}[m[2]]'),
 ('Take ${gen?"genius":"worker"} of ${n.j+1}. space','Take ${gen?"genius":"worker"} from ${n.j+1}. space'),
 ('>Język stołu<','>Table language<'),
+('aria-label="Zamknij okno">×','aria-label="Close the window">×'),
 ('Kingdoms · gra online</p>','Kingdoms · online game</p>'),('<h2>Logowanie</h2>','<h2>Log in</h2>'),('for="lgP">Hasło<','for="lgP">Password<'),('id="lgGo">Zaloguj<','id="lgGo">Log in<'),
 ('<a href="terra/" style="color:var(--brass-2,#e8c766)">O grze Terra Altera</a> · <a href="terra/indexang.html" style="color:var(--brass-2,#e8c766)">About the game</a>','<a href="terra/indexang.html" style="color:var(--brass-2,#e8c766)">About Terra Altera</a> · <a href="terra/" style="color:var(--brass-2,#e8c766)">Polish website</a>'),
 ('id="create">Załóż stół<','id="create">Create table<'),('aria-label="Język / Language"','aria-label="Language / Język"'),
