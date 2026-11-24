@@ -247,4 +247,15 @@
 "znacznik wojny → ": "war marker → ",
 "|1\">Przyjmij</button> <button class=\"btn\" data-pact=\"": "|1\">Accept</button> <button class=\"btn\" data-pact=\"",
 "”, licytacja: ": "”, bidding: ",
-"★ geniusz": "★ genius","30 pkt kultury – chwała":"30 culture points – glory","20 na torze siły – karta imperialna":"20 on the strength track – Imperial card","premia z planszy głównej: ":"main board bonus: ","Remisy: produkcja wpływów, siła, produkcja kultury, energii, kamienia, złota.":"Ties: influence production, strength, production of culture, energy, stone, gold."}
+"★ geniusz": "★ genius",
+"30 pkt kultury – chwała": "30 culture points – glory",
+"20 na torze siły – karta imperialna": "20 on the strength track – Imperial card",
+"premia z planszy głównej: ": "main board bonus: ",
+"Remisy: produkcja wpływów, siła, produkcja kultury, energii, kamienia, złota.": "Ties: influence production, strength, production of culture, energy, stone, gold.",
+"\" aria-label=\"Weź chwałę z toru\" title=\"Weź kostkę z toru chwały": "\" aria-label=\"Take glory from the track\" title=\"Take a cube from the glory track",
+" z 8 kostek. Następna ": " of 8 cubes. The next one ",
+"jest darmowa": "is free",
+"kostka chwały": "glory cube",
+"na kostkę chwały: −": " for the glory cube: −",
+"chwała z toru (kostka ": "glory from the track (cube "
+}
